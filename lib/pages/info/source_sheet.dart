@@ -435,7 +435,7 @@ class _SourceSheetState extends State<SourceSheet> with SingleTickerProviderStat
                                     ),
                                     Expanded(
                                       child: SingleChildScrollView(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
                                         child: Wrap(
                                           spacing: 8,
                                           runSpacing: 8,
@@ -472,7 +472,7 @@ class _SourceSheetState extends State<SourceSheet> with SingleTickerProviderStat
                                               ),
                                               backgroundColor: widget.tabController.index == i
                                                   ? Theme.of(context).colorScheme.primary
-                                                  : Theme.of(context).colorScheme.surface,
+                                                  : Theme.of(context).colorScheme.surfaceContainerLow,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(20),
                                               ),
