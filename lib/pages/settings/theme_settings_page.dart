@@ -141,170 +141,104 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
           maxWidth: 1000,
           sections: [
             SettingsSection(
-              title: const Text('外观'),
               tiles: [
                 SettingsTile.navigation(
-                  onPressed: (_) {
-                    if (menuController.isOpen) {
-                      menuController.close();
-                    } else {
-                      menuController.open();
-                    }
-                  },
-                  title: const Text('深色模式'),
-                  value: MenuAnchor(
-                    consumeOutsideTap: true,
-                    controller: menuController,
-                    builder: (_, __, ___) {
-                      return Text(
-                        defaultThemeMode == 'light'
-                            ? '浅色'
-                            : (defaultThemeMode == 'dark' ? '深色' : '跟随系统'),
-                      );
-                    },
-                    menuChildren: [
-                      MenuItemButton(
-                        requestFocusOnHover: false,
-                        onPressed: () => updateTheme('system'),
-                        child: Container(
-                          height: 48,
-                          constraints: BoxConstraints(minWidth: 112),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.brightness_auto_rounded,
-                                  color: defaultThemeMode == 'system'
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  '跟随系统',
-                                  style: TextStyle(
-                                    color: defaultThemeMode == 'system'
-                                        ? Theme.of(context).colorScheme.primary
-                                        : null,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                  title: const Text('外观'),
+                  value: SegmentedButton<String>(
+                    segments: [
+                      ButtonSegment<String>(
+                        value: 'system',
+                        label: defaultThemeMode == 'system'
+                            ? const Center(child: Text('系统'))
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.brightness_auto_rounded, size: 18),
+                                  SizedBox(width: 4),
+                                  Text('系统'),
+                                ],
+                              ),
                       ),
-                      MenuItemButton(
-                        requestFocusOnHover: false,
-                        onPressed: () => updateTheme('light'),
-                        child: Container(
-                          height: 48,
-                          constraints: BoxConstraints(minWidth: 112),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.light_mode_rounded,
-                                  color: defaultThemeMode == 'light'
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  '浅色',
-                                  style: TextStyle(
-                                    color: defaultThemeMode == 'light'
-                                        ? Theme.of(context).colorScheme.primary
-                                        : null,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      ButtonSegment<String>(
+                        value: 'light',
+                        label: defaultThemeMode == 'light'
+                            ? const Center(child: Text('浅色'))
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.light_mode_rounded, size: 18),
+                                  SizedBox(width: 4),
+                                  Text('浅色'),
+                                ],
+                              ),
                       ),
-                      MenuItemButton(
-                        requestFocusOnHover: false,
-                        onPressed: () => updateTheme('dark'),
-                        child: Container(
-                          height: 48,
-                          constraints: BoxConstraints(minWidth: 112),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.dark_mode_rounded,
-                                  color: defaultThemeMode == 'dark'
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  '深色',
-                                  style: TextStyle(
-                                    color: defaultThemeMode == 'dark'
-                                        ? Theme.of(context).colorScheme.primary
-                                        : null,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      ButtonSegment<String>(
+                        value: 'dark',
+                        label: defaultThemeMode == 'dark'
+                            ? const Center(child: Text('深色'))
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.dark_mode_rounded, size: 18),
+                                  SizedBox(width: 4),
+                                  Text('深色'),
+                                ],
+                              ),
                       ),
                     ],
+                    selected: <String>{defaultThemeMode},
+                    onSelectionChanged: (Set<String> selected) {
+                      if (selected.isNotEmpty) {
+                        updateTheme(selected.first);
+                      }
+                    },
                   ),
                 ),
                 SettingsTile.navigation(
                   enabled: !useDynamicColor,
-                  onPressed: (_) async {
-                    KazumiDialog.show(builder: (context) {
-                      return AlertDialog(
-                        title: const Text('配色方案'),
-                        content: StatefulBuilder(builder:
-                            (BuildContext context, StateSetter setState) {
-                          final List<Map<String, dynamic>> colorThemes =
-                              colorThemeTypes;
-                          return Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 8,
-                            runSpacing: Utils.isDesktop() ? 8 : 0,
-                            children: [
-                              ...colorThemes.map(
-                                (e) {
-                                  final index = colorThemes.indexOf(e);
-                                  return GestureDetector(
-                                    onTap: () {
-                                      index == 0
-                                          ? resetTheme()
-                                          : setTheme(e['color']);
-                                      KazumiDialog.dismiss();
-                                    },
-                                    child: Column(
-                                      children: [
-                                        PaletteCard(
-                                          color: e['color'],
-                                          selected: (e['color']
-                                                      .value
-                                                      .toRadixString(16) ==
-                                                  defaultThemeColor ||
-                                              (defaultThemeColor == 'default' &&
-                                                  index == 0)),
-                                        ),
-                                        Text(e['label']),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              )
-                            ],
-                          );
-                        }),
-                      );
-                    });
-                  },
                   title: const Text('配色方案'),
+                  description: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 8,
+                          runSpacing: Utils.isDesktop() ? 8 : 0,
+                          children: [
+                            ...colorThemeTypes.map((e) {
+                              final index = colorThemeTypes.indexOf(e);
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    if (index == 0) {
+                                      resetTheme();
+                                    } else {
+                                      setTheme(e['color']);
+                                    }
+                                  });
+                                },
+                                child: Column(
+                                  children: [
+                                    PaletteCard(
+                                      color: e['color'],
+                                      selected: (e['color'].value.toRadixString(16) == defaultThemeColor ||
+                                          (defaultThemeColor == 'default' && index == 0)),
+                                    ),
+                                    Text(e['label']),
+                                  ],
+                                ),
+                              );
+                            })
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 SettingsTile.switchTile(
                   enabled: !Platform.isIOS,
@@ -316,13 +250,9 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                     setState(() {});
                   },
                   title: const Text('动态配色'),
+                  description: const Text('仅支持安卓12及以上和桌面平台'),
                   initialValue: useDynamicColor,
                 ),
-              ],
-              bottomInfo: const Text('动态配色仅支持安卓12及以上和桌面平台'),
-            ),
-            SettingsSection(
-              tiles: [
                 SettingsTile.switchTile(
                   onToggle: (value) async {
                     oledEnhance = value ?? !oledEnhance;

@@ -183,7 +183,6 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
               ],
             ),
             SettingsSection(
-              bottomInfo: const Text('立即上传观看记录到WEBDAV'),
               tiles: [
                 SettingsTile(
                   trailing: const Icon(Icons.cloud_upload_rounded),
@@ -191,18 +190,15 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
                     updateWebdav();
                   },
                   title: const Text('手动上传'),
+                  description: const Text('立即上传观看记录到WEBDAV'),
                 ),
-              ],
-            ),
-            SettingsSection(
-              bottomInfo: const Text('立即下载观看记录到本地'),
-              tiles: [
                 SettingsTile(
                   trailing: const Icon(Icons.cloud_download_rounded),
                   onPressed: (_) {
                     downloadWebdav();
                   },
                   title: const Text('手动下载'),
+                  description: const Text('立即下载观看记录到本地'),
                 ),
               ],
             ),
