@@ -1113,8 +1113,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                           index + 1 == 1
                                               ? '关闭'
                                               : index + 1 == 2
-                                                  ? '效率档'
-                                                  : '质量档',
+                                                  ? '效率'
+                                                  : '质量',
                                           style: TextStyle(
                                             color: playerController
                                                         .superResolutionType ==
@@ -1217,7 +1217,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                       Icons.aspect_ratio_rounded,
                                       color: Colors.white,
                                     ),
-                                    tooltip: '视频比例',
+                                    tooltip: '画面尺寸',
                                   );
                                 },
                                 menuChildren: [

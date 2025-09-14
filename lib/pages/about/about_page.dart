@@ -22,7 +22,7 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-  final exitBehaviorTitles = <String>['退出 Kazumi', '最小化至托盘', '每次都询问'];
+  final exitBehaviorTitles = <String>['退出', '隐藏', '询问'];
   late dynamic defaultDanmakuArea;
   late dynamic defaultThemeMode;
   late dynamic defaultThemeColor;
@@ -195,46 +195,21 @@ class _AboutPageState extends State<AboutPage> {
                 title: const Text('默认行为'),
                 tiles: [
                   SettingsTile.navigation(
-                    onPressed: (_) {
-                      if (menuController.isOpen) {
-                        menuController.close();
-                      } else {
-                        menuController.open();
-                      }
-                    },
                     title: const Text('关闭时'),
-                    value: MenuAnchor(
-                      consumeOutsideTap: true,
-                      controller: menuController,
-                      builder: (_, __, ___) {
-                        return Text(exitBehaviorTitles[exitBehavior]);
+                    value: SegmentedButton<int>(
+                      segments: List.generate(3, (i) => ButtonSegment<int>(
+                        value: i,
+                        label: Text(exitBehaviorTitles[i])
+                      )),
+                      selected: <int>{exitBehavior},
+                      onSelectionChanged: (Set<int> selected) {
+                        if (selected.isNotEmpty) {
+                          setState(() {
+                            exitBehavior = selected.first;
+                            setting.put(SettingBoxKey.exitBehavior, exitBehavior);
+                          });
+                        }
                       },
-                      menuChildren: [
-                        for (int i = 0; i < 3; i++)
-                          MenuItemButton(
-                            requestFocusOnHover: false,
-                            onPressed: () {
-                              exitBehavior = i;
-                              setting.put(SettingBoxKey.exitBehavior, i);
-                              setState(() {});
-                            },
-                            child: Container(
-                              height: 48,
-                              constraints: BoxConstraints(minWidth: 112),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  exitBehaviorTitles[i],
-                                  style: TextStyle(
-                                    color: i == exitBehavior
-                                        ? Theme.of(context).colorScheme.primary
-                                        : null,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
                     ),
                   ),
                 ],

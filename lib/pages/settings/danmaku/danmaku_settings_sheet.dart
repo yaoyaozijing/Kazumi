@@ -95,14 +95,14 @@ class _DanmakuSettingsSheetState extends State<DanmakuSettingsSheet> {
           title: const Text('弹幕显示'),
           tiles: [
             SettingsTile(
-              title: const Text('弹幕区域'),
+              title: const Text('屏幕占比'),
               description: Slider(
                 value: widget.danmakuController.option.area,
-                min: 0,
-                max: 1,
-                divisions: 4,
+                min: 0.25,
+                max: 1.0,
+                divisions: 3,
                 label:
-                    '${(widget.danmakuController.option.area * 100).round()}%',
+                    '${(widget.danmakuController.option.area * 4).round()}/4',
                 onChanged: (value) {
                   setState(() => widget.danmakuController.updateOption(
                         widget.danmakuController.option.copyWith(
@@ -113,44 +113,35 @@ class _DanmakuSettingsSheetState extends State<DanmakuSettingsSheet> {
                 },
               ),
             ),
-            SettingsTile.switchTile(
-              onToggle: (value) async {
-                bool show = value ?? widget.danmakuController.option.hideTop;
-                setState(() => widget.danmakuController.updateOption(
+            SettingsTile.navigation(
+              title: const Text('弹幕类型'),
+              value: SegmentedButton<String>(
+                multiSelectionEnabled: true,
+                segments: const [
+                  ButtonSegment<String>(value: 'top', label: Text('顶部')),
+                  ButtonSegment<String>(value: 'bottom', label: Text('底部')),
+                  ButtonSegment<String>(value: 'scroll', label: Text('滚动')),
+                ],
+                selected: {
+                  if (!widget.danmakuController.option.hideTop) 'top',
+                  if (!widget.danmakuController.option.hideBottom) 'bottom',
+                  if (!widget.danmakuController.option.hideScroll) 'scroll',
+                },
+                onSelectionChanged: (Set<String> selected) async {
+                  setState(() {
+                    widget.danmakuController.updateOption(
                       widget.danmakuController.option.copyWith(
-                        hideTop: !show,
+                        hideTop: !selected.contains('top'),
+                        hideBottom: !selected.contains('bottom'),
+                        hideScroll: !selected.contains('scroll'),
                       ),
-                    ));
-                setting.put(SettingBoxKey.danmakuTop, show);
-              },
-              title: const Text('顶部弹幕'),
-              initialValue: !widget.danmakuController.option.hideTop,
-            ),
-            SettingsTile.switchTile(
-              onToggle: (value) async {
-                bool show = value ?? widget.danmakuController.option.hideBottom;
-                setState(() => widget.danmakuController.updateOption(
-                      widget.danmakuController.option.copyWith(
-                        hideBottom: !show,
-                      ),
-                    ));
-                setting.put(SettingBoxKey.danmakuBottom, show);
-              },
-              title: const Text('底部弹幕'),
-              initialValue: !widget.danmakuController.option.hideBottom,
-            ),
-            SettingsTile.switchTile(
-              onToggle: (value) async {
-                bool show = value ?? widget.danmakuController.option.hideScroll;
-                setState(() => widget.danmakuController.updateOption(
-                      widget.danmakuController.option.copyWith(
-                        hideScroll: !show,
-                      ),
-                    ));
-                setting.put(SettingBoxKey.danmakuScroll, show);
-              },
-              title: const Text('滚动弹幕'),
-              initialValue: !widget.danmakuController.option.hideScroll,
+                    );
+                  });
+                  setting.put(SettingBoxKey.danmakuTop, selected.contains('top'));
+                  setting.put(SettingBoxKey.danmakuBottom, selected.contains('bottom'));
+                  setting.put(SettingBoxKey.danmakuScroll, selected.contains('scroll'));
+                },
+              ),
             ),
           ],
         ),

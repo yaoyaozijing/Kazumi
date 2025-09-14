@@ -45,7 +45,7 @@ abstract class _PlayerController with Store {
   @observable
   int syncplayClientRtt = 0;
 
-  /// 视频比例类型
+  /// 画面尺寸类型
   /// 1. AUTO
   /// 2. COVER
   /// 3. FILL

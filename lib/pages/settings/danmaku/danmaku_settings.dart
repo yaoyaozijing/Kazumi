@@ -126,40 +126,43 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                   description: const Text('默认是否随视频播放弹幕'),
                   initialValue: danmakuEnabledByDefault,
                 ),
-              ],
-            ),
-            SettingsSection(
-              title: const Text('弹幕来源'),
-              tiles: [
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuBiliBiliSource = value ?? !danmakuBiliBiliSource;
-                    await setting.put(SettingBoxKey.danmakuBiliBiliSource,
-                        danmakuBiliBiliSource);
-                    setState(() {});
-                  },
-                  title: const Text('BiliBili'),
-                  initialValue: danmakuBiliBiliSource,
-                ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuGamerSource = value ?? !danmakuGamerSource;
-                    await setting.put(
-                        SettingBoxKey.danmakuGamerSource, danmakuGamerSource);
-                    setState(() {});
-                  },
-                  title: const Text('Gamer'),
-                  initialValue: danmakuGamerSource,
-                ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuDanDanSource = value ?? !danmakuDanDanSource;
-                    await setting.put(
-                        SettingBoxKey.danmakuDanDanSource, danmakuDanDanSource);
-                    setState(() {});
-                  },
-                  title: const Text('DanDan'),
-                  initialValue: danmakuDanDanSource,
+                SettingsTile.navigation(
+                  title: const Text('来源'),
+                  value: 
+                      SegmentedButton<String>(
+                        multiSelectionEnabled: true,
+                        style: ButtonStyle(
+                          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 4))),
+                        segments: [
+                          ButtonSegment<String>(
+                            value: 'bilibili',
+                            label: const Text('BiliBili')
+                          ),
+                          ButtonSegment<String>(
+                            value: 'gamer',
+                            label:  const Text('Gamer')
+                          ),
+                          ButtonSegment<String>(
+                            value: 'dandan',
+                            label: const Text('DanDan')
+                          ),
+                        ],
+                        selected: {
+                          if (danmakuBiliBiliSource) 'bilibili',
+                          if (danmakuGamerSource) 'gamer',
+                          if (danmakuDanDanSource) 'dandan',
+                        },
+                        onSelectionChanged: (Set<String> selected) async {
+                          setState(() {
+                            danmakuBiliBiliSource = selected.contains('bilibili');
+                            danmakuGamerSource = selected.contains('gamer');
+                            danmakuDanDanSource = selected.contains('dandan');
+                          });
+                          await setting.put(SettingBoxKey.danmakuBiliBiliSource, danmakuBiliBiliSource);
+                          await setting.put(SettingBoxKey.danmakuGamerSource, danmakuGamerSource);
+                          await setting.put(SettingBoxKey.danmakuDanDanSource, danmakuDanDanSource);
+                        },
+                      ),
                 ),
               ],
             ),
@@ -178,46 +181,55 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
               title: const Text('弹幕显示'),
               tiles: [
                 SettingsTile(
-                  title: const Text('弹幕区域'),
+                  title: const Text('屏幕占比'),
                   description: Slider(
                     value: defaultDanmakuArea,
-                    min: 0,
-                    max: 1,
-                    divisions: 4,
-                    label: '${(defaultDanmakuArea * 100).round()}%',
+                    min: 0.25,
+                    max: 1.0,
+                    divisions: 3,
+                    label: '${(defaultDanmakuArea * 4).round()}/4',
                     onChanged: (value) {
-                      updateDanmakuArea(value);
+                      // 只允许 0.25, 0.5, 0.75, 1.0
+                      double snapped = (value * 4).round() / 4.0;
+                      updateDanmakuArea(snapped);
                     },
                   ),
                 ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuTop = value ?? !danmakuTop;
-                    await setting.put(SettingBoxKey.danmakuTop, danmakuTop);
-                    setState(() {});
-                  },
-                  title: const Text('顶部弹幕'),
-                  initialValue: danmakuTop,
-                ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuBottom = value ?? !danmakuBottom;
-                    await setting.put(
-                        SettingBoxKey.danmakuBottom, danmakuBottom);
-                    setState(() {});
-                  },
-                  title: const Text('底部弹幕'),
-                  initialValue: danmakuBottom,
-                ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuScroll = value ?? !danmakuScroll;
-                    await setting.put(
-                        SettingBoxKey.danmakuScroll, danmakuScroll);
-                    setState(() {});
-                  },
-                  title: const Text('滚动弹幕'),
-                  initialValue: danmakuScroll,
+                SettingsTile.navigation(
+                  title: const Text('弹幕类型'),
+                  value: 
+                      SegmentedButton<String>(
+                        multiSelectionEnabled: true,
+                        segments: [
+                          ButtonSegment<String>(
+                            value: 'top',
+                            label: const Text('顶部'),
+                          ),
+                          ButtonSegment<String>(
+                            value: 'bottom',
+                            label: const Text('底部'),
+                          ),
+                          ButtonSegment<String>(
+                            value: 'scroll',
+                            label: const Text('滚动'),
+                          ),
+                        ],
+                        selected: {
+                          if (danmakuTop) 'top',
+                          if (danmakuBottom) 'bottom',
+                          if (danmakuScroll) 'scroll',
+                        },
+                        onSelectionChanged: (Set<String> selected) async {
+                          setState(() {
+                            danmakuTop = selected.contains('top');
+                            danmakuBottom = selected.contains('bottom');
+                            danmakuScroll = selected.contains('scroll');
+                          });
+                          await setting.put(SettingBoxKey.danmakuTop, danmakuTop);
+                          await setting.put(SettingBoxKey.danmakuBottom, danmakuBottom);
+                          await setting.put(SettingBoxKey.danmakuScroll, danmakuScroll);
+                        },
+                      ),
                 ),
                 SettingsTile.switchTile(
                   onToggle: (value) async {

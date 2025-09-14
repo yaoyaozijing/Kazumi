@@ -448,10 +448,10 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                                     alignment: Alignment.centerLeft,
                                     child: Text(
                                       index + 1 == 1
-                                          ? '自动'
+                                          ? '适应'
                                           : index + 1 == 2
-                                              ? '裁切填充'
-                                              : '拉伸填充',
+                                              ? '填充'
+                                              : '拉伸',
                                       style: TextStyle(
                                           color: index + 1 ==
                                                   playerController
@@ -470,7 +470,7 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                               constraints: BoxConstraints(minWidth: 112),
                               child: Align(
                                 alignment: Alignment.centerLeft,
-                                child: Text("视频比例"),
+                                child: Text("画面尺寸"),
                               ),
                             ),
                           ),
@@ -526,8 +526,8 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                                       index + 1 == 1
                                           ? '关闭'
                                           : index + 1 == 2
-                                              ? '效率档'
-                                              : '质量档',
+                                              ? '效率'
+                                              : '质量',
                                       style: TextStyle(
                                         color: playerController
                                                     .superResolutionType ==

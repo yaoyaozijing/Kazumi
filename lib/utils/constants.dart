@@ -166,11 +166,11 @@ const String danmakuOnSvg = '''
     </svg>
     ''';
 
-/// 可选默认视频比例
+/// 可选默认画面尺寸
 const Map<int, String> aspectRatioTypeMap = {
-  1: "自动",
-  2: "裁切填充",
-  3: "拉伸填充",
+  1: "适应",
+  2: "填充",
+  3: "拉伸",
 };
 
 final List<String> defaultAnimeTags = const [

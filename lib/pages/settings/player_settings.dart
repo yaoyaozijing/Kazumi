@@ -82,12 +82,78 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
           maxWidth: 1000,
           sections: [
             SettingsSection(
+              title: const Text('播放器默认状态'),
+              tiles: [
+                SettingsTile.navigation(
+                  title: const Text('超分辨率'),
+                  value: SegmentedButton<int>(
+                    segments: const [
+                      ButtonSegment<int>(value: 1, label: Text('关闭')),
+                      ButtonSegment<int>(value: 2, label: Text('效率')),
+                      ButtonSegment<int>(value: 3, label: Text('质量')),
+                    ],
+                    selected: <int>{setting.get(SettingBoxKey.defaultSuperResolutionType, defaultValue: 1)},
+                    onSelectionChanged: (Set<int> selected) {
+                      if (selected.isNotEmpty) {
+                        setting.put(SettingBoxKey.defaultSuperResolutionType, selected.first);
+                        // 自动启用硬件解码
+                        if (selected.first == 2 || selected.first == 3) {
+                          if (!hAenable) {
+                            hAenable = true;
+                            setting.put(SettingBoxKey.hAenable, true);
+                          }
+                        }
+                        setState(() {});
+                      }
+                    },
+                  ),
+                ),
+                SettingsTile.navigation(
+                  onPressed: (_) async {},
+                  title: const Text('画面尺寸'),
+                  value: SegmentedButton<int>(
+                    segments: [
+                      for (final entry in aspectRatioTypeMap.entries)
+                        ButtonSegment<int>(
+                          value: entry.key,
+                          label: Text(entry.value),
+                        ),
+                    ],
+                    selected: <int>{defaultAspectRatioType},
+                    onSelectionChanged: (Set<int> selected) {
+                      if (selected.isNotEmpty) {
+                        updateDefaultAspectRatioType(selected.first);
+                      }
+                    },
+                  ),
+                ),
+                SettingsTile(
+                  title: const Text('倍速'),
+                  description: Slider(
+                    value: defaultPlaySpeed,
+                    min: 0.25,
+                    max: 3,
+                    divisions: 11,
+                    label: '${defaultPlaySpeed}x',
+                    onChanged: (value) {
+                      updateDefaultPlaySpeed(
+                          double.parse(value.toStringAsFixed(2)));
+                    },
+                  ),
+                ),
+              ],
+            ),
+            SettingsSection(
               tiles: [
                 SettingsTile.switchTile(
+                  enabled: setting.get(SettingBoxKey.defaultSuperResolutionType, defaultValue: 1) == 1,
                   onToggle: (value) async {
-                    hAenable = value ?? !hAenable;
-                    await setting.put(SettingBoxKey.hAenable, hAenable);
-                    setState(() {});
+                    // 只有超分辨率关闭时才允许切换
+                    if (setting.get(SettingBoxKey.defaultSuperResolutionType, defaultValue: 1) == 1) {
+                      hAenable = value ?? !hAenable;
+                      await setting.put(SettingBoxKey.hAenable, hAenable);
+                      setState(() {});
+                    }
                   },
                   title: const Text('硬件解码'),
                   initialValue: hAenable,
@@ -123,12 +189,6 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     initialValue: androidEnableOpenSLES,
                   ),
                 ],
-                SettingsTile.navigation(
-                  onPressed: (_) async {
-                    Modular.to.pushNamed('/settings/player/super');
-                  },
-                  title: const Text('超分辨率'),
-                ),
               ],
             ),
             SettingsSection(
@@ -174,66 +234,6 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   title: const Text('隐身模式'),
                   description: const Text('不保留观看记录'),
                   initialValue: privateMode,
-                ),
-              ],
-            ),
-            SettingsSection(
-              tiles: [
-                SettingsTile(
-                  title: const Text('默认倍速'),
-                  description: Slider(
-                    value: defaultPlaySpeed,
-                    min: 0.25,
-                    max: 3,
-                    divisions: 11,
-                    label: '${defaultPlaySpeed}x',
-                    onChanged: (value) {
-                      updateDefaultPlaySpeed(
-                          double.parse(value.toStringAsFixed(2)));
-                    },
-                  ),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) async {
-                    if (menuController.isOpen) {
-                      menuController.close();
-                    } else {
-                      menuController.open();
-                    }
-                  },
-                  title: const Text('默认视频比例'),
-                  value: MenuAnchor(
-                    consumeOutsideTap: true,
-                    controller: menuController,
-                    builder: (_, __, ___) {
-                      return Text(
-                        aspectRatioTypeMap[defaultAspectRatioType] ?? '自动',
-                      );
-                    },
-                    menuChildren: [
-                      for (final entry in aspectRatioTypeMap.entries)
-                        MenuItemButton(
-                          requestFocusOnHover: false,
-                          onPressed: () =>
-                              updateDefaultAspectRatioType(entry.key),
-                          child: Container(
-                            height: 48,
-                            constraints: BoxConstraints(minWidth: 112),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                entry.value,
-                                style: TextStyle(
-                                  color: entry.key == defaultAspectRatioType
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
                 ),
               ],
             ),
