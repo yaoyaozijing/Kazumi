@@ -7,7 +7,6 @@ import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/logger.dart';
 import 'package:kazumi/utils/utils.dart';
 import 'package:kazumi/utils/webdav.dart';
-import 'package:logger/logger.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
@@ -102,6 +101,7 @@ class _PlayerItemState extends State<PlayerItem>
   late double _danmakuDuration;
   late double _danmakuLineHeight;
   late int _danmakuFontWeight;
+  late bool _danmakuUseSystemFont;
 
   // 硬件解码
   late bool haEnable;
@@ -224,7 +224,7 @@ class _PlayerItemState extends State<PlayerItem>
       await playerController.seek(Duration(seconds: targetPosition));
       playerTimer = getPlayerTimer();
     } catch (e) {
-      KazumiLogger().log(Level.error, e.toString());
+      KazumiLogger().e('PlayerController: seek failed', error: e);
     }
   }
 
@@ -533,7 +533,7 @@ class _PlayerItemState extends State<PlayerItem>
         hideVolumeUITimer = null;
       });
     } catch (e) {
-      KazumiLogger().log(Level.error, '音量操作失败: ${e.toString()}');
+      KazumiLogger().e('PlayerController: volume change failed', error: e);
     }
   }
 
@@ -1234,6 +1234,8 @@ class _PlayerItemState extends State<PlayerItem>
         setting.get(SettingBoxKey.danmakuDanDanSource, defaultValue: true);
     _danmakuFontWeight =
         setting.get(SettingBoxKey.danmakuFontWeight, defaultValue: 4);
+    _danmakuUseSystemFont =
+        setting.get(SettingBoxKey.useSystemFont, defaultValue: false);
     haEnable = setting.get(SettingBoxKey.hAenable, defaultValue: true);
     playerTimer = getPlayerTimer();
     windowManager.addListener(this);
@@ -1403,7 +1405,7 @@ class _PlayerItemState extends State<PlayerItem>
                           strokeWidth: _border ? 1.5 : 0.0,
                           fontWeight: _danmakuFontWeight,
                           massiveMode: _massiveMode,
-                          fontFamily: customAppFontFamily,
+                          fontFamily: _danmakuUseSystemFont ? null : customAppFontFamily,
                         ),
                       ),
                     ),
