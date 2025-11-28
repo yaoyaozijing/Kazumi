@@ -1197,6 +1197,12 @@ class _PlayerItemState extends State<PlayerItem>
     _loadShortcuts();
     _initKeyboardActions();
     _initPlayerMenu();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!widget.keyboardFocus.hasFocus) {
+        widget.keyboardFocus.requestFocus();
+        KazumiDialog.showToast(message: "焦点抢夺");
+      }
+    });
     _fullscreenListener = mobx.reaction<bool>(
       (_) => videoPageController.isFullscreen,
       (_) {
@@ -1329,6 +1335,10 @@ class _PlayerItemState extends State<PlayerItem>
                             focusNode: widget.keyboardFocus,
                             autofocus: true,
                             onKeyEvent: (focusNode, KeyEvent event) {
+                              if (!widget.keyboardFocus.hasFocus) {
+                                widget.keyboardFocus.requestFocus();
+                                KazumiDialog.showToast(message: "焦点抢夺");
+                              }
                               if (event is KeyDownEvent) {
                                 final keyLabel = event.logicalKey.keyLabel.isNotEmpty
                                     ? event.logicalKey.keyLabel
