@@ -125,20 +125,6 @@ class _PlayerItemState extends State<PlayerItem>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed){
-      Future.delayed(Duration(milliseconds: 500), () {
-        _requireKeyboardFocus();
-        KazumiDialog.showToast(message: "隔0.5秒抢夺焦点");
-      });
-      Future.delayed(Duration(milliseconds: 5000), () {
-        _requireKeyboardFocus();
-        KazumiDialog.showToast(message: "隔5秒抢夺焦点");
-      });
-      Future.delayed(Duration(milliseconds: 10000), () {
-        _requireKeyboardFocus();
-        KazumiDialog.showToast(message: "隔10秒抢夺焦点");
-      });
-    }
     try {
       if (playerController.playerPlaying) {
         playerController.danmakuController.resume();
@@ -155,9 +141,16 @@ class _PlayerItemState extends State<PlayerItem>
     });
   }
 
-  void _requireKeyboardFocus(){
-      widget.keyboardFocus.requestFocus();
+  bool _hardwareKeyHandler(KeyEvent event) {
+  if (event is KeyDownEvent) {
+    final keyLabel = event.logicalKey.keyLabel.isNotEmpty
+        ? event.logicalKey.keyLabel
+        : event.logicalKey.debugName ?? '';
+
+    return handleShortcutInput(keyLabel);
   }
+  return false;
+}
 
   void _initKeyboardActions(){
     keyboardActions = {
@@ -1215,7 +1208,7 @@ class _PlayerItemState extends State<PlayerItem>
     _loadShortcuts();
     _initKeyboardActions();
     _initPlayerMenu();
-    _requireKeyboardFocus();
+    HardwareKeyboard.instance.addHandler(_hardwareKeyHandler);
     _fullscreenListener = mobx.reaction<bool>(
       (_) => videoPageController.isFullscreen,
       (_) {
@@ -1282,6 +1275,7 @@ class _PlayerItemState extends State<PlayerItem>
     animationController?.dispose();
     animationController = null;
     _disposePlayerMenu();
+    HardwareKeyboard.instance.removeHandler(_hardwareKeyHandler);
     // Reset player panel state
     playerController.lockPanel = false;
     playerController.showVideoController = true;
@@ -1347,17 +1341,18 @@ class _PlayerItemState extends State<PlayerItem>
                             // I don't know why, but the focus node will break popscope.
                             focusNode: widget.keyboardFocus,
                             autofocus: true,
-                            onKeyEvent: (focusNode, KeyEvent event) {
-                              if (event is KeyDownEvent) {
-                                final keyLabel = event.logicalKey.keyLabel.isNotEmpty
-                                    ? event.logicalKey.keyLabel
-                                    : event.logicalKey.debugName ?? '';
-                                    if (handleShortcutInput(keyLabel)) {
-                                      return KeyEventResult.handled;
-                                    }
-                              } 
-                              return KeyEventResult.ignored;
-                            },
+                            onKeyEvent: null,
+                            // (focusNode, KeyEvent event) {
+                            //   if (event is KeyDownEvent) {
+                            //     final keyLabel = event.logicalKey.keyLabel.isNotEmpty
+                            //         ? event.logicalKey.keyLabel
+                            //         : event.logicalKey.debugName ?? '';
+                            //         if (handleShortcutInput(keyLabel)) {
+                            //           return KeyEventResult.handled;
+                            //         }
+                            //   } 
+                            //   return KeyEventResult.ignored;
+                            // },
                             child: const PlayerItemSurface())),
                     (playerController.isBuffering ||
                             videoPageController.loading)
