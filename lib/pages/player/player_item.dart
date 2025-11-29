@@ -126,11 +126,8 @@ class _PlayerItemState extends State<PlayerItem>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed){
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!widget.keyboardFocus.hasFocus) {
-          widget.keyboardFocus.requestFocus();
-        }
-      });
+      _requireKeyboardFocus();
+      KazumiDialog.showToast(message: "回到前台并抢夺焦点");
     }
     try {
       if (playerController.playerPlaying) {
@@ -146,6 +143,10 @@ class _PlayerItemState extends State<PlayerItem>
           .get('shortcut_$key', defaultValue: defaultValue)
           .cast<String>();
     });
+  }
+
+  void _requireKeyboardFocus(){
+      widget.keyboardFocus.requestFocus();
   }
 
   void _initKeyboardActions(){
@@ -1204,11 +1205,7 @@ class _PlayerItemState extends State<PlayerItem>
     _loadShortcuts();
     _initKeyboardActions();
     _initPlayerMenu();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!widget.keyboardFocus.hasFocus) {
-        widget.keyboardFocus.requestFocus();
-      }
-    });
+    _requireKeyboardFocus();
     _fullscreenListener = mobx.reaction<bool>(
       (_) => videoPageController.isFullscreen,
       (_) {
