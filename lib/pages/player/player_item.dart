@@ -126,9 +126,17 @@ class _PlayerItemState extends State<PlayerItem>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed){
-      Future.delayed(Duration(milliseconds: 1000), () {
+      Future.delayed(Duration(milliseconds: 500), () {
         _requireKeyboardFocus();
-        KazumiDialog.showToast(message: "回到前台并抢夺焦点");
+        KazumiDialog.showToast(message: "隔0.5秒抢夺焦点");
+      });
+      Future.delayed(Duration(milliseconds: 5000), () {
+        _requireKeyboardFocus();
+        KazumiDialog.showToast(message: "隔5秒抢夺焦点");
+      });
+      Future.delayed(Duration(milliseconds: 10000), () {
+        _requireKeyboardFocus();
+        KazumiDialog.showToast(message: "隔10秒抢夺焦点");
       });
     }
     try {
