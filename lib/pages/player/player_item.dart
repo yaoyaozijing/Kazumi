@@ -125,6 +125,13 @@ class _PlayerItemState extends State<PlayerItem>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed){
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!widget.keyboardFocus.hasFocus) {
+          widget.keyboardFocus.requestFocus();
+        }
+      });
+    }
     try {
       if (playerController.playerPlaying) {
         playerController.danmakuController.resume();
@@ -1200,7 +1207,6 @@ class _PlayerItemState extends State<PlayerItem>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!widget.keyboardFocus.hasFocus) {
         widget.keyboardFocus.requestFocus();
-        KazumiDialog.showToast(message: "焦点抢夺");
       }
     });
     _fullscreenListener = mobx.reaction<bool>(
@@ -1335,10 +1341,6 @@ class _PlayerItemState extends State<PlayerItem>
                             focusNode: widget.keyboardFocus,
                             autofocus: true,
                             onKeyEvent: (focusNode, KeyEvent event) {
-                              if (!widget.keyboardFocus.hasFocus) {
-                                widget.keyboardFocus.requestFocus();
-                                KazumiDialog.showToast(message: "焦点抢夺");
-                              }
                               if (event is KeyDownEvent) {
                                 final keyLabel = event.logicalKey.keyLabel.isNotEmpty
                                     ? event.logicalKey.keyLabel
