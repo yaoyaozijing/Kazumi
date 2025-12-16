@@ -137,32 +137,30 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(' 本集标题  '),
+          Text(videoPageController.episodeInfo.readType().toUpperCase()),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    '${videoPageController.episodeInfo.readType()}.${videoPageController.episodeInfo.episode} ${videoPageController.episodeInfo.name}',
+                    '${videoPageController.episodeInfo.episode} ${videoPageController.episodeInfo.name}',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.outline)),
-                Text(
-                    (videoPageController.episodeInfo.nameCn != '')
-                        ? '${videoPageController.episodeInfo.readType()}.${videoPageController.episodeInfo.episode} ${videoPageController.episodeInfo.nameCn}'
-                        : '${videoPageController.episodeInfo.readType()}.${videoPageController.episodeInfo.episode} ${videoPageController.episodeInfo.name}',
+                        fontSize: 12)),
+                if (videoPageController.episodeInfo.nameCn != ' ') Text(
+                    '${videoPageController.episodeInfo.episode} ${videoPageController.episodeInfo.nameCn}',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.outline)),
+                        fontSize: 12)),
               ],
             ),
           ),
           const SizedBox(width: 10),
           SizedBox(
             height: 34,
-            child: TextButton(
+            child: IconButton(
+              icon: const Icon(Icons.swap_horiz_rounded),
               style: ButtonStyle(
                 padding: WidgetStateProperty.all(
                     const EdgeInsets.only(left: 4.0, right: 4.0)),
@@ -170,10 +168,6 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
               onPressed: () {
                 showEpisodeSelection();
               },
-              child: const Text(
-                '手动切换',
-                style: TextStyle(fontSize: 13),
-              ),
             ),
           ),
         ],

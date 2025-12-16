@@ -11,6 +11,7 @@ import 'package:kazumi/request/api.dart';
 import 'package:kazumi/utils/mortis.dart';
 import 'package:kazumi/utils/storage.dart';
 import 'package:kazumi/utils/utils.dart';
+import 'package:kazumi/utils/setting_tiles.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -22,7 +23,7 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-  final exitBehaviorTitles = <String>['退出 Kazumi', '最小化至托盘', '每次都询问'];
+  final exitBehaviorTitles = <String>['退出', '进托盘', '询问'];
   late dynamic defaultDanmakuArea;
   late dynamic defaultThemeMode;
   late dynamic defaultThemeColor;
@@ -32,7 +33,6 @@ class _AboutPageState extends State<AboutPage> {
   late bool autoUpdate;
   double _cacheSizeMB = -1;
   final MyController myController = Modular.get<MyController>();
-  final MenuController menuController = MenuController();
 
   @override
   void initState() {
@@ -202,48 +202,24 @@ class _AboutPageState extends State<AboutPage> {
               SettingsSection(
                 title: Text('默认行为', style: TextStyle(fontFamily: fontFamily)),
                 tiles: [
-                  SettingsTile.navigation(
-                    onPressed: (_) {
-                      if (menuController.isOpen) {
-                        menuController.close();
-                      } else {
-                        menuController.open();
+                  SettingsTileSegmentedButton<int>(
+                    title: Text('关闭窗口时', style: TextStyle(fontFamily: fontFamily)),
+                    segments: [
+                      for (int i = 0; i < exitBehaviorTitles.length; i++)
+                        ButtonSegment<int>(
+                          value: i,
+                          label: Text(exitBehaviorTitles[i]),
+                        ),
+                    ],
+                    selected: {exitBehavior},
+                    onSelectionChanged: (Set<int> newSelection) {
+                      if (newSelection.isNotEmpty) {
+                        exitBehavior = newSelection.first;
+                        setting.put(SettingBoxKey.exitBehavior, exitBehavior);
+                        setState(() {});
                       }
                     },
-                    title: Text('关闭时', style: TextStyle(fontFamily: fontFamily)),
-                    value: MenuAnchor(
-                      consumeOutsideTap: true,
-                      controller: menuController,
-                      builder: (_, __, ___) {
-                        return Text(exitBehaviorTitles[exitBehavior]);
-                      },
-                      menuChildren: [
-                        for (int i = 0; i < 3; i++)
-                          MenuItemButton(
-                            requestFocusOnHover: false,
-                            onPressed: () {
-                              exitBehavior = i;
-                              setting.put(SettingBoxKey.exitBehavior, i);
-                              setState(() {});
-                            },
-                            child: Container(
-                              height: 48,
-                              constraints: BoxConstraints(minWidth: 112),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  exitBehaviorTitles[i],
-                                  style: TextStyle(
-                                    color: i == exitBehavior
-                                        ? Theme.of(context).colorScheme.primary
-                                        : null,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+                    showSelectedIcon: false,
                   ),
                 ],
               ),

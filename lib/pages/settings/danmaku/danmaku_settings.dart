@@ -7,6 +7,7 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/popular/popular_controller.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:card_settings_ui/card_settings_ui.dart';
+import 'package:kazumi/utils/setting_tiles.dart';
 
 class DanmakuSettingsPage extends StatefulWidget {
   const DanmakuSettingsPage({super.key});
@@ -133,43 +134,32 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
           maxWidth: 1000,
           sections: [
             SettingsSection(
-              title: Text('弹幕来源', style: TextStyle(fontFamily: fontFamily)),
+              title: Text('弹幕选项', style: TextStyle(fontFamily: fontFamily)),
               tiles: [
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuBiliBiliSource = value ?? !danmakuBiliBiliSource;
-                    await setting.put(SettingBoxKey.danmakuBiliBiliSource,
-                        danmakuBiliBiliSource);
+                SettingsTileSegmentedButton<String>(
+                  title: Text('弹幕来源', style: TextStyle(fontFamily: fontFamily)),
+                  segments: [
+                    ButtonSegment(value: 'bilibili', label: Text('BiliBili')),
+                    ButtonSegment(value: 'gamer', label: Text('Gamer')),
+                    ButtonSegment(value: 'dandan', label: Text('DanDan')),
+                  ],
+                  selected: {
+                    if (danmakuBiliBiliSource) 'bilibili',
+                    if (danmakuGamerSource) 'gamer',
+                    if (danmakuDanDanSource) 'dandan',
+                  },
+                  onSelectionChanged: (Set<String> newSelection) async {
+                    danmakuBiliBiliSource = newSelection.contains('bilibili');
+                    danmakuGamerSource = newSelection.contains('gamer');
+                    danmakuDanDanSource = newSelection.contains('dandan');
+                    await setting.put(SettingBoxKey.danmakuBiliBiliSource, danmakuBiliBiliSource);
+                    await setting.put(SettingBoxKey.danmakuGamerSource, danmakuGamerSource);
+                    await setting.put(SettingBoxKey.danmakuDanDanSource, danmakuDanDanSource);
                     setState(() {});
                   },
-                  title: Text('BiliBili', style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: danmakuBiliBiliSource,
+                  multiSelectionEnabled: true,
+                  showSelectedIcon: false,
                 ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuGamerSource = value ?? !danmakuGamerSource;
-                    await setting.put(
-                        SettingBoxKey.danmakuGamerSource, danmakuGamerSource);
-                    setState(() {});
-                  },
-                  title: Text('Gamer', style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: danmakuGamerSource,
-                ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuDanDanSource = value ?? !danmakuDanDanSource;
-                    await setting.put(
-                        SettingBoxKey.danmakuDanDanSource, danmakuDanDanSource);
-                    setState(() {});
-                  },
-                  title: Text('DanDan', style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: danmakuDanDanSource,
-                ),
-              ],
-            ),
-            SettingsSection(
-              title: Text('弹幕屏蔽', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
                 SettingsTile.navigation(
                   onPressed: (_) {
                     Modular.to.pushNamed('/settings/danmaku/shield');
@@ -231,34 +221,28 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                   description: Text('开启后弹幕速度会随视频倍速而改变', style: TextStyle(fontFamily: fontFamily)),
                   initialValue: danmakuFollowSpeed,
                 ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuTop = value ?? !danmakuTop;
+                SettingsTileSegmentedButton<String>(
+                  title: Text('弹幕位置', style: TextStyle(fontFamily: fontFamily)),
+                  segments: [
+                    ButtonSegment(value: 'top', label: Text('顶部')),
+                    ButtonSegment(value: 'bottom', label: Text('底部')),
+                    ButtonSegment(value: 'scroll', label: Text('滚动')),
+                  ],
+                  selected: {
+                    if (danmakuTop) 'top',
+                    if (danmakuBottom) 'bottom',
+                    if (danmakuScroll) 'scroll',
+                  },
+                  onSelectionChanged: (Set<String> newSelection) async {
+                    danmakuTop = newSelection.contains('top');
+                    danmakuBottom = newSelection.contains('bottom');
+                    danmakuScroll = newSelection.contains('scroll');
                     await setting.put(SettingBoxKey.danmakuTop, danmakuTop);
+                    await setting.put(SettingBoxKey.danmakuBottom, danmakuBottom);
+                    await setting.put(SettingBoxKey.danmakuScroll, danmakuScroll);
                     setState(() {});
                   },
-                  title: Text('顶部弹幕', style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: danmakuTop,
-                ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuBottom = value ?? !danmakuBottom;
-                    await setting.put(
-                        SettingBoxKey.danmakuBottom, danmakuBottom);
-                    setState(() {});
-                  },
-                  title: Text('底部弹幕', style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: danmakuBottom,
-                ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    danmakuScroll = value ?? !danmakuScroll;
-                    await setting.put(
-                        SettingBoxKey.danmakuScroll, danmakuScroll);
-                    setState(() {});
-                  },
-                  title: Text('滚动弹幕', style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: danmakuScroll,
+                  multiSelectionEnabled: true,
                 ),
                 SettingsTile.switchTile(
                   onToggle: (value) async {

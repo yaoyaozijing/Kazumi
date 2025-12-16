@@ -623,8 +623,8 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                             index + 1 == 1
                                 ? '自动'
                                 : index + 1 == 2
-                                    ? '裁切填充'
-                                    : '拉伸填充',
+                                    ? '裁切'
+                                    : '拉伸',
                             style: TextStyle(
                                 color: index + 1 ==
                                         playerController.aspectRatioType
@@ -679,33 +679,29 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                   ),
                 ),
                 SubmenuButton(
-                  menuChildren: List<MenuItemButton>.generate(
-                    3,
-                    (int index) => MenuItemButton(
-                      onPressed: () =>
-                          widget.handleSuperResolutionChange(index + 1),
-                      child: Container(
-                        height: 48,
-                        constraints: BoxConstraints(minWidth: 112),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            index + 1 == 1
-                                ? '关闭'
-                                : index + 1 == 2
-                                    ? '效率档'
-                                    : '质量档',
-                            style: TextStyle(
-                              color: playerController.superResolutionType ==
-                                      index + 1
-                                  ? Theme.of(context).colorScheme.primary
-                                  : null,
+                  menuChildren: superResolutionTypeMap.entries
+                    .map(
+                      (entry) => MenuItemButton(
+                        onPressed: () =>
+                            widget.handleSuperResolutionChange(entry.key),
+                        child: Container(
+                          height: 48,
+                          constraints: const BoxConstraints(minWidth: 112),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              entry.value,
+                              style: TextStyle(
+                                color: playerController.superResolutionType == entry.key
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    )
+                    .toList(),
                   child: Container(
                     height: 48,
                     constraints: BoxConstraints(minWidth: 112),

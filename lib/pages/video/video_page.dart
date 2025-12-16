@@ -686,15 +686,10 @@ class _VideoPageState extends State<VideoPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(' 合集 '),
           Expanded(
             child: Text(
               videoPageController.title,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.outline,
-              ),
             ),
           ),
           const SizedBox(width: 10),
