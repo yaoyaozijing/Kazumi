@@ -10,8 +10,6 @@ import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:kazumi/request/api.dart';
 import 'package:kazumi/utils/mortis.dart';
 import 'package:kazumi/utils/storage.dart';
-import 'package:kazumi/utils/utils.dart';
-import 'package:kazumi/utils/setting_tiles.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -23,13 +21,10 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-  final exitBehaviorTitles = <String>['退出', '进托盘', '询问'];
   late dynamic defaultDanmakuArea;
   late dynamic defaultThemeMode;
   late dynamic defaultThemeColor;
   Box setting = GStorage.setting;
-  late int exitBehavior =
-      setting.get(SettingBoxKey.exitBehavior, defaultValue: 2);
   late bool autoUpdate;
   double _cacheSizeMB = -1;
   final MyController myController = Modular.get<MyController>();
@@ -138,10 +133,40 @@ class _AboutPageState extends State<AboutPage> {
       },
       child: Scaffold(
         appBar: const SysAppBar(title: Text('关于')),
-        // backgroundColor: Colors.transparent,
         body: SettingsList(
           maxWidth: 1000,
           sections: [
+            SettingsSection(
+              title: const SizedBox.shrink(),
+              tiles: [
+                SettingsTile.navigation(
+                  title: Center(
+                  child: Image.asset(
+                      'assets/images/mypage_logo.png',
+                      height: 200,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                SettingsTile.navigation(
+                  onPressed: (_) {
+                    myController.checkUpdate();
+                  },
+                  title: Text('版本', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('点击检查更新', style: TextStyle(fontFamily: fontFamily)),
+                  value: Text(Api.version, style: TextStyle(fontFamily: fontFamily)),
+                ),
+                SettingsTile.switchTile(
+                  onToggle: (value) async {
+                    autoUpdate = value ?? !autoUpdate;
+                    await setting.put(SettingBoxKey.autoUpdate, autoUpdate);
+                    setState(() {});
+                  },
+                  title: Text('自动检查更新', style: TextStyle(fontFamily: fontFamily)),
+                  initialValue: autoUpdate,
+                ),
+              ],
+            ),
             SettingsSection(
               tiles: [
                 SettingsTile.navigation(
@@ -151,11 +176,6 @@ class _AboutPageState extends State<AboutPage> {
                   title: Text('开源许可证', style: TextStyle(fontFamily: fontFamily)),
                   description: Text('查看所有开源许可证', style: TextStyle(fontFamily: fontFamily)),
                 ),
-              ],
-            ),
-            SettingsSection(
-              title: Text('外部链接', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
                 SettingsTile.navigation(
                   onPressed: (_) {
                     launchUrl(Uri.parse(Api.projectUrl),
@@ -198,31 +218,6 @@ class _AboutPageState extends State<AboutPage> {
                 ),
               ],
             ),
-            if (Utils.isDesktop()) // 之后如果有非桌面平台的新选项可以移除
-              SettingsSection(
-                title: Text('默认行为', style: TextStyle(fontFamily: fontFamily)),
-                tiles: [
-                  SettingsTileSegmentedButton<int>(
-                    title: Text('关闭窗口时', style: TextStyle(fontFamily: fontFamily)),
-                    segments: [
-                      for (int i = 0; i < exitBehaviorTitles.length; i++)
-                        ButtonSegment<int>(
-                          value: i,
-                          label: Text(exitBehaviorTitles[i]),
-                        ),
-                    ],
-                    selected: {exitBehavior},
-                    onSelectionChanged: (Set<int> newSelection) {
-                      if (newSelection.isNotEmpty) {
-                        exitBehavior = newSelection.first;
-                        setting.put(SettingBoxKey.exitBehavior, exitBehavior);
-                        setState(() {});
-                      }
-                    },
-                    showSelectedIcon: false,
-                  ),
-                ],
-              ),
             SettingsSection(
               tiles: [
                 SettingsTile.navigation(
@@ -231,10 +226,6 @@ class _AboutPageState extends State<AboutPage> {
                   },
                   title: Text('错误日志', style: TextStyle(fontFamily: fontFamily)),
                 ),
-              ],
-            ),
-            SettingsSection(
-              tiles: [
                 SettingsTile.navigation(
                   onPressed: (_) {
                     _showCacheDialog();
@@ -243,27 +234,6 @@ class _AboutPageState extends State<AboutPage> {
                   value: _cacheSizeMB == -1
                       ? Text('统计中...', style: TextStyle(fontFamily: fontFamily))
                       : Text('${_cacheSizeMB.toStringAsFixed(2)}MB', style: TextStyle(fontFamily: fontFamily)),
-                ),
-              ],
-            ),
-            SettingsSection(
-              title: Text('应用更新', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    autoUpdate = value ?? !autoUpdate;
-                    await setting.put(SettingBoxKey.autoUpdate, autoUpdate);
-                    setState(() {});
-                  },
-                  title: Text('自动更新', style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: autoUpdate,
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    myController.checkUpdate();
-                  },
-                  title: Text('检查更新', style: TextStyle(fontFamily: fontFamily)),
-                  value: Text('当前版本 ${Api.version}', style: TextStyle(fontFamily: fontFamily)),
                 ),
               ],
             ),
