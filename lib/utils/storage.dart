@@ -20,6 +20,10 @@ class GStorage {
   static late Box<SearchHistory> searchHistory;
 
   static Future init() async {
+    if (Platform.isAndroid){
+      final externalDir = await getExternalStorageDirectory();
+      Hive.init('${externalDir!.path}/hive');
+    }
     Hive.registerAdapter(BangumiItemAdapter());
     Hive.registerAdapter(BangumiTagAdapter());
     Hive.registerAdapter(CollectedBangumiAdapter());
@@ -37,7 +41,12 @@ class GStorage {
   }
 
   static Future<void> backupBox(String boxName, String backupFilePath) async {
-    final appDocumentDir = await getApplicationSupportDirectory();
+    final dynamic appDocumentDir;
+    if (Platform.isAndroid){
+    appDocumentDir = await getExternalStorageDirectory();
+    } else {
+    appDocumentDir = await getApplicationSupportDirectory();
+    }
     final hiveBoxFile = File('${appDocumentDir.path}/hive/$boxName.hive');
     if (await hiveBoxFile.exists()) {
       await hiveBoxFile.copy(backupFilePath);
