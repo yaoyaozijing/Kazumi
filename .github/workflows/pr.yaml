@@ -245,18 +245,16 @@
               flutter-version-file: pubspec.yaml
           - run: flutter pub get
           - run: flutter build macos --release
-          - name: Create DMG
+          - name: Create Zip
             run: |
-              npm install --global create-dmg
-              create-dmg build/macos/Build/Products/Release/Kazumi.app
-            continue-on-error: true
-          - name: Rename DMG
-            run: mv Kazumi*.dmg Kazumi_macos_canary.dmg
+              cd build/macos/Build/Products/Release
+              zip -r Kazumi_macos_canary.zip Kazumi.app
+              mv Kazumi_macos_canary.zip ../../../../..
           - name: Upload MacOS build
             uses: actions/upload-artifact@v4
             with:
               name: macos_outputs
-              path: Kazumi_macos_*.dmg
+              path: Kazumi_macos_*.zip
 
       flutter-build-linux:
         needs: changes
