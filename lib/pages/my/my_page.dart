@@ -44,10 +44,26 @@ class _MyPageState extends State<MyPage> {
         onBackPressed(context);
       },
       child: Scaffold(
-        appBar: const SysAppBar(title: Text('我的'), needTopOffset: false),
         body: SettingsList(
           maxWidth: 1000,
           sections: [
+            SettingsSection(
+              title: const SizedBox.shrink(),
+              tiles: [
+                SettingsTile.navigation(
+                  onPressed: (_) {
+                    Modular.to.pushNamed('/settings/about/');
+                  },
+                  title: Center(
+                  child: Image.asset(
+                      'assets/images/mypage_logo.png',
+                      height: 200,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             SettingsSection(
               title: Text('播放历史与视频源', style: TextStyle(fontFamily: fontFamily)),
               tiles: [
@@ -138,9 +154,8 @@ class _MyPageState extends State<MyPage> {
                     Modular.to.pushNamed('/settings/theme');
                   },
                   leading: const Icon(Icons.palette_rounded),
-                  title: Text('外观设置', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('设置应用主题和刷新率',
-                      style: TextStyle(fontFamily: fontFamily)),
+                  title: Text('外观和行为', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('设置应用主题、刷新率和行为', style: TextStyle(fontFamily: fontFamily)),
                 ),
                 SettingsTile.navigation(
                   onPressed: (_) {

@@ -36,6 +36,9 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   final PopularController popularController = Modular.get<PopularController>();
   late final ThemeProvider themeProvider;
   final MenuController menuController = MenuController();
+  final exitBehaviorTitles = <String>['退出', '进托盘', '询问'];
+  late int exitBehavior =
+    setting.get(SettingBoxKey.exitBehavior, defaultValue: 2);
 
   @override
   void initState() {
@@ -148,7 +151,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
         onBackPressed(context);
       },
       child: Scaffold(
-        appBar: const SysAppBar(title: Text('外观设置')),
+        appBar: const SysAppBar(title: Text('外观和行为')),
         body: SettingsList(
           maxWidth: 1000,
           sections: [
@@ -253,8 +256,10 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
               ],
               bottomInfo: Text('动态配色仅支持安卓12及以上和桌面平台', style: TextStyle(fontFamily: fontFamily)),
             ),
+
             if (Utils.isDesktop())
               SettingsSection(
+                title: Text('桌面端设置', style: TextStyle(fontFamily: fontFamily)),
                 tiles: [
                   SettingsTile.switchTile(
                     onToggle: (value) async {
@@ -267,10 +272,30 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                     description: Text('重启应用生效', style: TextStyle(fontFamily: fontFamily)),
                     initialValue: showWindowButton,
                   ),
+                  SettingsTileSegmentedButton<int>(
+                    title: Text('关闭窗口时', style: TextStyle(fontFamily: fontFamily)),
+                    segments: [
+                      for (int i = 0; i < exitBehaviorTitles.length; i++)
+                        ButtonSegment<int>(
+                          value: i,
+                          label: Text(exitBehaviorTitles[i]),
+                        ),
+                    ],
+                    selected: {exitBehavior},
+                    onSelectionChanged: (Set<int> newSelection) {
+                      if (newSelection.isNotEmpty) {
+                        exitBehavior = newSelection.first;
+                        setting.put(SettingBoxKey.exitBehavior, exitBehavior);
+                        setState(() {});
+                      }
+                    },
+                    showSelectedIcon: false,
+                  ),
                 ],
               ),
             if (Platform.isAndroid)
               SettingsSection(
+                title: Text('移动端设置', style: TextStyle(fontFamily: fontFamily)),
                 tiles: [
                   SettingsTile.navigation(
                     onPressed: (_) async {
