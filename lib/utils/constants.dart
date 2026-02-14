@@ -179,8 +179,15 @@ const String danmakuOnSvg = '''
 /// 可选默认视频比例
 const Map<int, String> aspectRatioTypeMap = {
   1: "自动",
-  2: "裁切填充",
-  3: "拉伸填充",
+  2: "裁切",
+  3: "拉伸",
+};
+
+/// 可选超分辨率类型
+const Map<int, String> superResolutionTypeMap = {
+  1: '关闭',
+  2: '效率',
+  3: '质量',
 };
 
 /// 可选播放器日志等级

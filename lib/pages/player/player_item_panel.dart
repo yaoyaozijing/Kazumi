@@ -861,54 +861,54 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         onClose: () {
                           widget.cancelHideTimer();
                           widget.startHideTimer();
+                          widget.startHideTimer();
                           playerController.canHidePlayerPanel = true;
                         },
-                        builder: (BuildContext context, MenuController controller,
-                            Widget? child) {
+                        builder: (BuildContext context, MenuController controller, Widget? child) {
+                          final currentLabel =
+                              superResolutionTypeMap[playerController.superResolutionType] ?? '';
+
                           return TextButton(
                             onPressed: () {
-                              if (controller.isOpen) {
-                                controller.close();
-                              } else {
-                                controller.open();
-                              }
+                              controller.isOpen ? controller.close() : controller.open();
                             },
-                            child: const Text(
-                              '超分辨率',
-                              style: TextStyle(color: Colors.white),
+                            child: Text(
+                              '超分 · $currentLabel',
+                              style: const TextStyle(color: Colors.white),
                             ),
                           );
                         },
-                        menuChildren: List<MenuItemButton>.generate(
-                          3,
-                          (int index) => MenuItemButton(
-                            onPressed: () =>
-                                widget.handleSuperResolutionChange(index + 1),
-                            child: Container(
-                              height: 48,
-                              constraints: BoxConstraints(minWidth: 112),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  index + 1 == 1
-                                      ? '关闭'
-                                      : index + 1 == 2
-                                          ? '效率档'
-                                          : '质量档',
-                                  style: TextStyle(
-                                    color: playerController.superResolutionType ==
-                                            index + 1
-                                        ? Theme.of(context).colorScheme.primary
-                                        : null,
+                        menuChildren: superResolutionTypeMap.entries
+                            .map(
+                              (entry) => MenuItemButton(
+                                onPressed: () =>
+                                    widget.handleSuperResolutionChange(entry.key),
+                                child: Container(
+                                  height: 48,
+                                  constraints: const BoxConstraints(minWidth: 112),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      entry.value,
+                                      style: TextStyle(
+                                        color:
+                                            playerController.superResolutionType == entry.key
+                                                ? Theme.of(context).colorScheme.primary
+                                                : null,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
+                            )
+                            .toList(),
                       ),
                       // 倍速播放
                       MenuAnchor(
+                        style: const MenuStyle(
+                          alignment: Alignment.topRight,  //以按钮右侧为锚点，防止按钮宽度变化造成菜单抖动
+                        ),
+                        alignmentOffset: const Offset(-260, 0),
                         consumeOutsideTap: true,
                         onOpen: () {
                           widget.cancelHideTimer();
@@ -919,15 +919,10 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           widget.startHideTimer();
                           playerController.canHidePlayerPanel = true;
                         },
-                        builder: (BuildContext context, MenuController controller,
-                            Widget? child) {
+                        builder: (BuildContext context, MenuController controller, Widget? child) {
                           return TextButton(
                             onPressed: () {
-                              if (controller.isOpen) {
-                                controller.close();
-                              } else {
-                                controller.open();
-                              }
+                              controller.isOpen ? controller.close() : controller.open();
                             },
                             child: Text(
                               playerController.playerSpeed == 1.0
@@ -938,29 +933,75 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           );
                         },
                         menuChildren: [
-                          for (final double i
-                              in defaultPlaySpeedList) ...<MenuItemButton>[
-                            MenuItemButton(
-                              onPressed: () async {
-                                await widget.setPlaybackSpeed(i);
-                              },
-                              child: Container(
-                                height: 48,
-                                constraints: BoxConstraints(minWidth: 112),
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    '${i}x',
-                                    style: TextStyle(
-                                      color: i == playerController.playerSpeed
-                                          ? Theme.of(context).colorScheme.primary
-                                          : null,
+                          SizedBox(
+                            width: 370,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Slider(
+                                        min: 0,
+                                        max: (defaultPlaySpeedList.length - 1).toDouble(),
+                                        divisions: defaultPlaySpeedList.length - 1,
+                                        value: defaultPlaySpeedList
+                                            .indexWhere(
+                                              (e) =>
+                                                  (e - playerController.playerSpeed).abs() < 0.001,
+                                            )
+                                            .clamp(0, defaultPlaySpeedList.length - 1)
+                                            .toDouble(),
+                                        onChanged: (index) async {
+                                          final speed =
+                                              defaultPlaySpeedList[index.round()];
+                                          await widget.setPlaybackSpeed(speed);
+                                        },
+                                      ),
                                     ),
-                                  ),
+                                    SizedBox(
+                                      width: 40,
+                                      child: Text(
+                                        '${playerController.playerSpeed}x',
+                                        textAlign: TextAlign.right,
+                                        style: Theme.of(context).textTheme.labelLarge,
+                                      )
+                                    )
+                                    ,
+                                    const SizedBox(width: 16),
+                                  ],
                                 ),
-                              ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  spacing: 8,
+                                  children: [
+                                    SizedBox(width: 0),
+                                    for (final speed in const [1.0, 1.25, 1.5, 2.0, 3.0])
+                                      ActionChip(
+                                        label: Text('${speed}x'),
+                                        onPressed: () async {
+                                          await widget.setPlaybackSpeed(speed);
+                                        },
+                                        backgroundColor:
+                                            (playerController.playerSpeed - speed).abs() < 0.001
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .withOpacity(0.15)
+                                                : null,
+                                        labelStyle: TextStyle(
+                                          color:
+                                              (playerController.playerSpeed - speed).abs() < 0.001
+                                                  ? Theme.of(context).colorScheme.primary
+                                                  : null,
+                                        ),
+                                      ),
+                                    SizedBox(width: 0),
+                                  ],
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ],
                       ),
                       MenuAnchor(

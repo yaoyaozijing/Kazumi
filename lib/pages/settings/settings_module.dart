@@ -31,6 +31,7 @@ class SettingsModule extends Module {
     r.child("/interface", child: (_) => const InterfaceSettingsPage());
     r.module("/proxy", module: ProxyModule());
     r.child("/player/super", child: (_) => const SuperResolutionSettings());
+    // r.child("/other", child: (_) => const OtherSettingsPage());
     r.module("/webdav", module: WebDavModule());
     r.module("/about", module: AboutModule());
     r.module("/plugin", module: PluginModule());

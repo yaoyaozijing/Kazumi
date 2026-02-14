@@ -7,6 +7,7 @@ import 'package:hive_ce/hive.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/storage.dart';
+import 'package:kazumi/utils/setting_tiles.dart';
 import 'package:card_settings_ui/card_settings_ui.dart';
 
 class PlayerSettingsPage extends StatefulWidget {
@@ -33,8 +34,9 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
   late int playerButtonSkipTime;
   late int playerArrowKeySkipTime;
   late int playerLogLevel;
-  final MenuController playerAspectRatioMenuController = MenuController();
-  final MenuController playerLogLevelMenuController = MenuController();
+  late int defaultSuperResolutionType;
+  late bool superResolutionWarn;
+  late String hardwareDecoder;
 
   @override
   void initState() {
@@ -65,6 +67,9 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
         setting.get(SettingBoxKey.buttonSkipTime, defaultValue: 80);
     playerArrowKeySkipTime =
         setting.get(SettingBoxKey.arrowKeySkipTime, defaultValue: 10);
+    defaultSuperResolutionType = setting.get(SettingBoxKey.defaultSuperResolutionType, defaultValue: 1);
+    superResolutionWarn = setting.get(SettingBoxKey.superResolutionWarn, defaultValue: false);
+    hardwareDecoder = setting.get(SettingBoxKey.hardwareDecoder, defaultValue: 'auto-safe');
   }
 
   void onBackPressed(BuildContext context) {
@@ -92,6 +97,20 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
     setting.put(SettingBoxKey.defaultAspectRatioType, type);
     setState(() {
       defaultAspectRatioType = type;
+    });
+  }
+
+  void updateDefaultSuperResolutionType(int type) {
+    setting.put(SettingBoxKey.defaultSuperResolutionType, type);
+    setState(() {
+      defaultSuperResolutionType = type;
+    });
+  }
+
+  void updateSuperResolutionWarn(bool value) {
+    setting.put(SettingBoxKey.superResolutionWarn, value);
+    setState(() {
+      superResolutionWarn = value;
     });
   }
 
@@ -189,9 +208,13 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                 SettingsTile.navigation(
                   onPressed: (_) async {
                     await Modular.to.pushNamed('/settings/player/decoder');
+                    setState(() {
+                      hardwareDecoder = setting.get(SettingBoxKey.hardwareDecoder, defaultValue: 'auto-safe');
+                    });
                   },
                   title: Text('硬件解码器', style: TextStyle(fontFamily: fontFamily)),
                   description: Text('仅在硬件解码启用时生效', style: TextStyle(fontFamily: fontFamily)),
+                  value: Text(hardwareDecoder, style: TextStyle(fontFamily: fontFamily)),
                 ),
                 if (Platform.isAndroid) ...[
                   SettingsTile.navigation(
@@ -226,13 +249,24 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     initialValue: androidEnableOpenSLES,
                   ),
                 ],
-                SettingsTile.navigation(
-                  onPressed: (_) async {
-                    Modular.to.pushNamed('/settings/player/super');
-                  },
+                SettingsTileSegmentedButton<int>(
                   title: Text('超分辨率', style: TextStyle(fontFamily: fontFamily)),
+                  segments: superResolutionTypeMap.entries.map((entry) => ButtonSegment<int>(value: entry.key, label: Text(entry.value))).toList(),
+                  selected: {defaultSuperResolutionType},
+                  onSelectionChanged: (Set<int> newSelection) {
+                    updateDefaultSuperResolutionType(newSelection.first);
+                  },
+                ),
+                SettingsTile.switchTile(
+                  onToggle: (value) async {
+                    updateSuperResolutionWarn(value ?? !superResolutionWarn);
+                  },
+                  title: Text('关闭超分辨率提示', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('关闭每次启用超分辨率时的提示', style: TextStyle(fontFamily: fontFamily)),
+                  initialValue: superResolutionWarn,
                 ),
               ],
+              bottomInfo: Text('超分辨率基于Anime4K，需要启用硬件解码, 若启用硬件解码后仍然不生效, 尝试切换硬件解码器为 auto-copy', style: TextStyle(fontFamily: fontFamily)),
             ),
             SettingsSection(
               tiles: [
@@ -313,54 +347,21 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   description: Text('记录播放器内部日志', style: TextStyle(fontFamily: fontFamily)),
                   initialValue: playerDebugMode,
                 ),
-                SettingsTile.navigation(
-                  onPressed: (_) async {
-                    if (playerLogLevelMenuController.isOpen) {
-                      playerLogLevelMenuController.close();
-                    } else {
-                      playerLogLevelMenuController.open();
-                    }
-                  },
+                SettingsTileSegmentedButton<int>(
                   title: Text('日志等级', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('播放器内部日志等级', style: TextStyle(fontFamily: fontFamily)),
-                  value: MenuAnchor(
-                    consumeOutsideTap: true,
-                    controller: playerLogLevelMenuController,
-                    builder: (_, __, ___) {
-                      return Text(
-                        playerLogLevelMap[playerLogLevel] ?? '???',
-                      );
-                    },
-                    menuChildren: [
-                      for (final entry in playerLogLevelMap.entries)
-                        MenuItemButton(
-                          requestFocusOnHover: false,
-                          onPressed: () => updatePlayerLogLevel(entry.key),
-                          child: Container(
-                            height: 48,
-                            constraints: BoxConstraints(minWidth: 112),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                entry.value,
-                                style: TextStyle(
-                                  color: entry.key == playerLogLevel
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                  segments: playerLogLevelMap.entries.map((entry) => ButtonSegment<int>(value: entry.key, label: Text(entry.value))).toList(),
+                  selected: {playerLogLevel},
+                  onSelectionChanged: (Set<int> newSelection) {
+                    updatePlayerLogLevel(newSelection.first);
+                  },
                 ),
               ],
             ),
             SettingsSection(
+              title: Text('默认'),
               tiles: [
                 SettingsTile(
-                  title: Text('默认倍速', style: TextStyle(fontFamily: fontFamily)),
+                  title: Text('倍速', style: TextStyle(fontFamily: fontFamily)),
                   description: Slider(
                     value: defaultPlaySpeed,
                     min: 0.25,
@@ -403,49 +404,13 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   description: Text('顶栏跳过按钮的秒数', style: TextStyle(fontFamily: fontFamily)),
                   value: Text('$playerButtonSkipTime 秒', style: TextStyle(fontFamily: fontFamily)),
                 ),
-                SettingsTile.navigation(
-                  onPressed: (_) async {
-                    if (playerAspectRatioMenuController.isOpen) {
-                      playerAspectRatioMenuController.close();
-                    } else {
-                      playerAspectRatioMenuController.open();
-                    }
+                SettingsTileSegmentedButton<int>(
+                  title: Text('视频比例', style: TextStyle(fontFamily: fontFamily)),
+                  segments: aspectRatioTypeMap.entries.map((entry) => ButtonSegment<int>(value: entry.key, label: Text(entry.value))).toList(),
+                  selected: {defaultAspectRatioType},
+                  onSelectionChanged: (Set<int> newSelection) {
+                    updateDefaultAspectRatioType(newSelection.first);
                   },
-                  title: Text('默认视频比例', style: TextStyle(fontFamily: fontFamily)),
-                  value: MenuAnchor(
-                    consumeOutsideTap: true,
-                    controller: playerAspectRatioMenuController,
-                    builder: (_, __, ___) {
-                      return Text(
-                        aspectRatioTypeMap[defaultAspectRatioType] ?? '自动',
-                        style: TextStyle(fontFamily: fontFamily),
-                      );
-                    },
-                    menuChildren: [
-                      for (final entry in aspectRatioTypeMap.entries)
-                        MenuItemButton(
-                          requestFocusOnHover: false,
-                          onPressed: () =>
-                              updateDefaultAspectRatioType(entry.key),
-                          child: Container(
-                            height: 48,
-                            constraints: BoxConstraints(minWidth: 112),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                entry.value,
-                                style: TextStyle(
-                                  color: entry.key == defaultAspectRatioType
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                                  fontFamily: fontFamily,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
                 ),
               ],
             ),

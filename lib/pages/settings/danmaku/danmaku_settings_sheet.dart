@@ -5,6 +5,7 @@ import 'package:kazumi/utils/storage.dart';
 import 'package:kazumi/utils/utils.dart';
 import 'package:kazumi/pages/settings/danmaku/danmaku_shield_settings.dart';
 import 'package:card_settings_ui/card_settings_ui.dart';
+import 'package:kazumi/utils/setting_tiles.dart';
 
 class DanmakuSettingsSheet extends StatefulWidget {
   final DanmakuController danmakuController;
@@ -160,44 +161,25 @@ class _DanmakuSettingsSheetState extends State<DanmakuSettingsSheet> {
                   },
                 ),
               ),
-              SettingsTile.switchTile(
-                onToggle: (value) async {
-                  bool show = value ?? widget.danmakuController.option.hideTop;
-                  setState(() => widget.danmakuController.updateOption(
-                        widget.danmakuController.option.copyWith(
-                          hideTop: !show,
-                        ),
-                      ));
-                  setting.put(SettingBoxKey.danmakuTop, show);
+              SettingsTileSegmentedButton<String>(
+                title: Text('弹幕位置', style: TextStyle(fontFamily: fontFamily)),
+                segments: [
+                  ButtonSegment(value: 'top', label: Text('顶部')),
+                  ButtonSegment(value: 'bottom', label: Text('底部')),
+                  ButtonSegment(value: 'scroll', label: Text('滚动')),
+                ],
+                selected: {
+                  if (setting.get(SettingBoxKey.danmakuTop, defaultValue: true)) 'top',
+                  if (setting.get(SettingBoxKey.danmakuBottom, defaultValue: false)) 'bottom',
+                  if (setting.get(SettingBoxKey.danmakuScroll, defaultValue: false)) 'scroll',
                 },
-                title: Text('顶部弹幕', style: TextStyle(fontFamily: fontFamily)),
-                initialValue: !widget.danmakuController.option.hideTop,
-              ),
-              SettingsTile.switchTile(
-                onToggle: (value) async {
-                  bool show = value ?? widget.danmakuController.option.hideBottom;
-                  setState(() => widget.danmakuController.updateOption(
-                        widget.danmakuController.option.copyWith(
-                          hideBottom: !show,
-                        ),
-                      ));
-                  setting.put(SettingBoxKey.danmakuBottom, show);
+                onSelectionChanged: (Set<String> newSelection) async {
+                  await setting.put(SettingBoxKey.danmakuTop, newSelection.contains('top'));
+                  await setting.put(SettingBoxKey.danmakuBottom, newSelection.contains('bottom'));
+                  await setting.put(SettingBoxKey.danmakuScroll, newSelection.contains('scroll'));
+                  setState(() {});
                 },
-                title: Text('底部弹幕', style: TextStyle(fontFamily: fontFamily)),
-                initialValue: !widget.danmakuController.option.hideBottom,
-              ),
-              SettingsTile.switchTile(
-                onToggle: (value) async {
-                  bool show = value ?? widget.danmakuController.option.hideScroll;
-                  setState(() => widget.danmakuController.updateOption(
-                        widget.danmakuController.option.copyWith(
-                          hideScroll: !show,
-                        ),
-                      ));
-                  setting.put(SettingBoxKey.danmakuScroll, show);
-                },
-                title: Text('滚动弹幕', style: TextStyle(fontFamily: fontFamily)),
-                initialValue: !widget.danmakuController.option.hideScroll,
+                multiSelectionEnabled: true,
               ),
               SettingsTile.switchTile(
                 onToggle: (value) async {
@@ -213,7 +195,7 @@ class _DanmakuSettingsSheetState extends State<DanmakuSettingsSheet> {
             ],
           ),
         ],
-      ),
+      )
     );
   }
 }
