@@ -33,12 +33,20 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   late bool showWindowButton;
   late bool useSystemFont;
   late bool showRating;
+  late String defaultPage;
   final PopularController popularController = Modular.get<PopularController>();
   late final ThemeProvider themeProvider;
   final MenuController menuController = MenuController();
   final exitBehaviorTitles = <String>['退出', '进托盘', '询问'];
   late int exitBehavior =
     setting.get(SettingBoxKey.exitBehavior, defaultValue: 2);
+
+  static const Map<String, String> defaultPageMap = {
+    '/tab/popular/': '推荐',
+    '/tab/timeline/': '时间表',
+    '/tab/collect/': '追番',
+    '/tab/my/': '我的',
+  };
 
   @override
   void initState() {
@@ -55,6 +63,8 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
     useSystemFont =
         setting.get(SettingBoxKey.useSystemFont, defaultValue: false);
     showRating = setting.get(SettingBoxKey.showRating, defaultValue: true);
+    defaultPage = setting.get(SettingBoxKey.defaultStartupPage,
+        defaultValue: '/tab/popular/');
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
   }
 
@@ -140,6 +150,13 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
       color = Color(int.parse(defaultThemeColor, radix: 16));
     }
     setTheme(color);
+  }
+
+  void updateDefaultPage(String page) {
+    setting.put(SettingBoxKey.defaultStartupPage, page);
+    setState(() {
+      defaultPage = page;
+    });
   }
 
   @override
@@ -243,24 +260,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                   description: Text('关闭后使用 MI Sans 字体', style: TextStyle(fontFamily: fontFamily)),
                   initialValue: useSystemFont,
                 ),
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    showRating = value ?? !showRating;
-                    await setting.put(SettingBoxKey.showRating, showRating);
-                    setState(() {});
-                  },
-                  title: Text('显示评分', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('关闭后将在概览中隐藏评分信息', style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: showRating,
-                ),
-              ],
-              bottomInfo: Text('动态配色仅支持安卓12及以上和桌面平台', style: TextStyle(fontFamily: fontFamily)),
-            ),
-
-            if (Utils.isDesktop())
-              SettingsSection(
-                title: Text('桌面端设置', style: TextStyle(fontFamily: fontFamily)),
-                tiles: [
+                if (Utils.isDesktop())
                   SettingsTile.switchTile(
                     onToggle: (value) async {
                       showWindowButton = value ?? !showWindowButton;
@@ -272,6 +272,47 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                     description: Text('重启应用生效', style: TextStyle(fontFamily: fontFamily)),
                     initialValue: showWindowButton,
                   ),
+                if (Platform.isAndroid)
+                  SettingsTile.navigation(
+                    onPressed: (_) async {
+                      Modular.to.pushNamed('/settings/theme/display');
+                    },
+                    title: Text('屏幕帧率', style: TextStyle(fontFamily: fontFamily)),
+                  ),
+              ],
+              bottomInfo: Text('动态配色仅支持安卓12及以上和桌面平台', style: TextStyle(fontFamily: fontFamily)),
+            ),
+            SettingsSection(
+              title: Text('行为', style: TextStyle(fontFamily: fontFamily)),
+              tiles: [
+                SettingsTileSegmentedButton<String>(
+                  title: Text('启动界面', style: TextStyle(fontFamily: fontFamily)),
+                  segments: [
+                    for (final entry in defaultPageMap.entries)
+                      ButtonSegment<String>(
+                        value: entry.key,
+                        label: Text(entry.value),
+                      ),
+                  ],
+                  selected: {defaultPage},
+                  onSelectionChanged: (Set<String> newSelection) {
+                    if (newSelection.isNotEmpty) {
+                      updateDefaultPage(newSelection.first);
+                    }
+                  },
+                ),
+                SettingsTile.switchTile(
+                  onToggle: (value) async {
+                    showRating = value ?? !showRating;
+                    await setting.put(SettingBoxKey.showRating, showRating);
+                    setState(() {});
+                  },
+                  title: Text('显示评分', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('关闭后将在概览中隐藏评分信息',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  initialValue: showRating,
+                ),
+                if (Utils.isDesktop())
                   SettingsTileSegmentedButton<int>(
                     title: Text('关闭窗口时', style: TextStyle(fontFamily: fontFamily)),
                     segments: [
@@ -291,20 +332,8 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                     },
                     showSelectedIcon: false,
                   ),
-                ],
-              ),
-            if (Platform.isAndroid)
-              SettingsSection(
-                title: Text('移动端设置', style: TextStyle(fontFamily: fontFamily)),
-                tiles: [
-                  SettingsTile.navigation(
-                    onPressed: (_) async {
-                      Modular.to.pushNamed('/settings/theme/display');
-                    },
-                    title: Text('屏幕帧率', style: TextStyle(fontFamily: fontFamily)),
-                  ),
-                ],
-              ),
+              ],
+            ),
           ],
         ),
       ),

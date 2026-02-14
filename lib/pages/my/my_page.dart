@@ -1,10 +1,24 @@
-import 'package:card_settings_ui/card_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:kazumi/pages/menu/menu.dart';
+import 'package:kazumi/pages/my/my_outline.dart';
 import 'package:provider/provider.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
+import 'package:kazumi/pages/my/my_state.dart';
+import 'package:kazumi/pages/settings/theme_settings_page.dart';
+import 'package:kazumi/pages/settings/displaymode_settings.dart';
+import 'package:kazumi/pages/settings/keyboard_settings.dart';
+import 'package:kazumi/pages/settings/player_settings.dart';
+import 'package:kazumi/pages/settings/decoder_settings.dart';
+import 'package:kazumi/pages/settings/renderer_settings.dart';
+import 'package:kazumi/pages/settings/download_settings.dart';
+import 'package:kazumi/pages/history/history_page.dart';
+import 'package:kazumi/pages/download/download_page.dart';
+import 'package:kazumi/pages/about/about_page.dart';
+import 'package:kazumi/pages/plugin_editor/plugin_view_page.dart';
+import 'package:kazumi/pages/settings/danmaku/danmaku_settings.dart';
+import 'package:kazumi/pages/settings/proxy/proxy_settings_page.dart';
+import 'package:kazumi/pages/webdav_editor/webdav_setting.dart';
 
 class MyPage extends StatefulWidget {
   const MyPage({super.key});
@@ -16,182 +30,151 @@ class MyPage extends StatefulWidget {
 class _MyPageState extends State<MyPage> {
   late NavigationBarState navigationBarState;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    navigationBarState =
+        Provider.of<NavigationBarState>(context, listen: false);
+  }
+
   void onBackPressed(BuildContext context) {
     if (KazumiDialog.observer.hasKazumiDialog) {
       KazumiDialog.dismiss();
       return;
     }
+
+    final myState = Provider.of<MyState>(context, listen: false);
+
+    // 窄屏 detail -> 返回 outline
+    if (myState.hasDetail &&
+        MediaQuery.of(context).size.width < 900) {
+      myState.clear();
+      return;
+    }
+
     navigationBarState.updateSelectedIndex(0);
     Modular.to.navigate('/tab/popular/');
   }
 
   @override
-  void initState() {
-    super.initState();
-    navigationBarState =
-        Provider.of<NavigationBarState>(context, listen: false);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) {
-        if (didPop) {
-          return;
-        }
-        onBackPressed(context);
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) onBackPressed(context);
       },
       child: Scaffold(
-        body: SettingsList(
-          maxWidth: 1000,
-          sections: [
-            SettingsSection(
-              title: const SizedBox.shrink(),
-              tiles: [
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/about/');
-                  },
-                  title: Center(
-                  child: Image.asset(
-                      'assets/images/mypage_logo.png',
-                      height: 200,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SettingsSection(
-              title: Text('播放历史与视频源', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/history/');
-                  },
-                  leading: const Icon(Icons.history_rounded),
-                  title: Text('历史记录', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('查看播放历史记录',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/download/');
-                  },
-                  leading: const Icon(Icons.download_rounded),
-                  title: Text('下载管理', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('查看和管理离线下载',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/download-settings');
-                  },
-                  leading: const Icon(Icons.settings_rounded),
-                  title: Text('下载设置', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('配置下载并发数等参数',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/plugin/');
-                  },
-                  leading: const Icon(Icons.extension),
-                  title: Text('规则管理', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('管理番剧资源规则',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-              ],
-            ),
-            SettingsSection(
-              title: Text('播放器设置', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/player');
-                  },
-                  leading: const Icon(Icons.display_settings_rounded),
-                  title: Text('播放设置', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('设置播放器相关参数',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/danmaku/');
-                  },
-                  leading: const Icon(Icons.subtitles_rounded),
-                  title: Text('弹幕设置', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('设置弹幕相关参数',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/keyboard');
-                  },
-                  leading: const Icon(Icons.keyboard_rounded),
-                  title: Text('操作设置', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('设置播放器按键映射',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/proxy');
-                  },
-                  leading: const Icon(Icons.vpn_key_rounded),
-                  title: Text('代理设置', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('配置HTTP代理',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-              ],
-            ),
-            SettingsSection(
-              title: Text('应用与外观', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/theme');
-                  },
-                  leading: const Icon(Icons.palette_rounded),
-                  title: Text('外观和行为', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('设置应用主题、刷新率和行为', style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/interface');
-                  },
-                  leading: const Icon(Icons.pages_rounded),
-                  title: Text('界面设置', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('设置应用界面样式',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/webdav/');
-                  },
-                  leading: const Icon(Icons.cloud),
-                  title: Text('同步设置', style: TextStyle(fontFamily: fontFamily)),
-                  description:
-                      Text('设置同步参数', style: TextStyle(fontFamily: fontFamily)),
-                ),
-              ],
-            ),
-            SettingsSection(
-              title: Text('其他', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/about/');
-                  },
-                  leading: const Icon(Icons.info_outline_rounded),
-                  title: Text('关于', style: TextStyle(fontFamily: fontFamily)),
-                ),
-              ],
-            ),
-          ],
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 900;
+
+            return Consumer<MyState>(
+              builder: (context, state, _) {
+                if (isWide) {
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: 320,
+                        child: MyOutline(
+                          onSelect: state.open, // ✅ 修复 select 错误
+                        ),
+                      ),
+                      const VerticalDivider(width: 1),
+                      const Expanded(
+                        child: _MyDetailPane(),
+                      ),
+                    ],
+                  );
+                }
+
+                if (state.hasDetail) {
+                  return const _MyDetailPane();
+                }
+
+                return const MyOutline();
+              },
+            );
+          },
         ),
       ),
     );
+  }
+}
+
+class _MyDetailPane extends StatelessWidget {
+  const _MyDetailPane();
+
+  @override
+  Widget build(BuildContext context) {
+    final route =
+        Provider.of<MyState>(context).currentRoute;
+
+    if (route == null) {
+      return const Center(
+        child: Text(
+          '请选择左侧的设置项',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    switch (route) {
+      // ===== 外观 =====
+      case '/settings/theme':
+        return const ThemeSettingsPage();
+      case '/settings/theme/display':
+        return const SetDisplayMode();
+
+      // ===== 键盘 =====
+      case '/settings/keyboard':
+        return const KeyboardSettingsPage();
+
+      // ===== 播放器 =====
+      case '/settings/player':
+        return const PlayerSettingsPage();
+      case '/settings/player/decoder':
+        return const DecoderSettings();
+      case '/settings/player/renderer':
+        return const RendererSettings();
+
+      // ===== 弹幕 =====
+      case '/settings/danmaku/':
+        return const DanmakuSettingsPage();
+
+      // ===== 下载 =====
+      case '/settings/download/':
+        return const DownloadPage();
+      case '/settings/download-settings':
+        return const DownloadSettingsPage();
+
+      // ===== 历史 =====
+      case '/settings/history/':
+        return const HistoryPage();
+
+      // ===== 代理 =====
+      case '/settings/proxy':
+        return const ProxySettingsPage();
+
+      // ===== WebDAV =====
+      case '/settings/webdav/':
+        return const WebDavSettingsPage();
+
+      // ===== 插件 =====
+      case '/settings/plugin/':
+        return const PluginViewPage();
+
+      // ===== 关于 =====
+      case '/settings/about/':
+        return const AboutPage();
+
+      default:
+        return Center(
+          child: Text(
+            '未实现的设置页面：\n$route',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.grey),
+          ),
+        );
+    }
   }
 }
