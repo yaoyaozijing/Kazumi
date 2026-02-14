@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/bean/appbar/settings_app_bar.dart';
 import 'package:kazumi/utils/utils.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
-import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 
 class PluginViewPage extends StatefulWidget {
   const PluginViewPage({super.key});
@@ -147,23 +147,19 @@ class _PluginViewPageState extends State<PluginViewPage> {
         onBackPressed(context);
       },
       child: Scaffold(
-        appBar: SysAppBar(
-          title: isMultiSelectMode
-              ? Text('已选择 ${selectedNames.length} 项')
-              : const Text('规则管理'),
-          leading: isMultiSelectMode
-              ? IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    setState(() {
-                      isMultiSelectMode = false;
-                      selectedNames.clear();
-                    });
-                  },
-                )
-              : null,
+        appBar: SettingsAppBar(
           actions: [
             if (isMultiSelectMode) ...[
+              Text('已选择 ${selectedNames.length} 项'),
+              IconButton(
+                icon: const Icon(Icons.check),
+                onPressed: () {
+                  setState(() {
+                    isMultiSelectMode = false;
+                    selectedNames.clear();
+                  });
+                },
+              ),
               IconButton(
                 onPressed: selectedNames.isEmpty
                     ? null

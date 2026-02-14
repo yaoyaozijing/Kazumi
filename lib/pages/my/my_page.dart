@@ -5,20 +5,7 @@ import 'package:kazumi/pages/my/my_outline.dart';
 import 'package:provider/provider.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/my/my_state.dart';
-import 'package:kazumi/pages/settings/theme_settings_page.dart';
-import 'package:kazumi/pages/settings/displaymode_settings.dart';
-import 'package:kazumi/pages/settings/keyboard_settings.dart';
-import 'package:kazumi/pages/settings/player_settings.dart';
-import 'package:kazumi/pages/settings/decoder_settings.dart';
-import 'package:kazumi/pages/settings/renderer_settings.dart';
-import 'package:kazumi/pages/settings/download_settings.dart';
-import 'package:kazumi/pages/history/history_page.dart';
-import 'package:kazumi/pages/download/download_page.dart';
-import 'package:kazumi/pages/about/about_page.dart';
-import 'package:kazumi/pages/plugin_editor/plugin_view_page.dart';
-import 'package:kazumi/pages/settings/danmaku/danmaku_settings.dart';
-import 'package:kazumi/pages/settings/proxy/proxy_settings_page.dart';
-import 'package:kazumi/pages/webdav_editor/webdav_setting.dart';
+import 'package:kazumi/pages/my/my_outline_items.dart';
 
 class MyPage extends StatefulWidget {
   const MyPage({super.key});
@@ -106,9 +93,9 @@ class _MyDetailPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final route =
-        Provider.of<MyState>(context).currentRoute;
+    final route = Provider.of<MyState>(context).currentRoute;
 
+    // route 为 null，显示提示
     if (route == null) {
       return const Center(
         child: Text(
@@ -118,63 +105,29 @@ class _MyDetailPane extends StatelessWidget {
       );
     }
 
-    switch (route) {
-      // ===== 外观 =====
-      case '/settings/theme':
-        return const ThemeSettingsPage();
-      case '/settings/theme/display':
-        return const SetDisplayMode();
+    // ⚡ 使用局部变量，避免 public 字段无法提升的问题
+    final currentRoute = route;
 
-      // ===== 键盘 =====
-      case '/settings/keyboard':
-        return const KeyboardSettingsPage();
+    // 查找匹配的 tile
+    final item = myOutlineSections
+        .expand((s) => s.tiles)
+        .firstWhere(
+          (t) => currentRoute.startsWith(t.route),
+          orElse: () => OutlineTile(
+            title: '未知设置',
+            route: '',
+            pageBuilder: () => const SizedBox.shrink(), // 可以为 null
+          ),
+        );
 
-      // ===== 播放器 =====
-      case '/settings/player':
-        return const PlayerSettingsPage();
-      case '/settings/player/decoder':
-        return const DecoderSettings();
-      case '/settings/player/renderer':
-        return const RendererSettings();
-
-      // ===== 弹幕 =====
-      case '/settings/danmaku/':
-        return const DanmakuSettingsPage();
-
-      // ===== 下载 =====
-      case '/settings/download/':
-        return const DownloadPage();
-      case '/settings/download-settings':
-        return const DownloadSettingsPage();
-
-      // ===== 历史 =====
-      case '/settings/history/':
-        return const HistoryPage();
-
-      // ===== 代理 =====
-      case '/settings/proxy':
-        return const ProxySettingsPage();
-
-      // ===== WebDAV =====
-      case '/settings/webdav/':
-        return const WebDavSettingsPage();
-
-      // ===== 插件 =====
-      case '/settings/plugin/':
-        return const PluginViewPage();
-
-      // ===== 关于 =====
-      case '/settings/about/':
-        return const AboutPage();
-
-      default:
-        return Center(
+    // ⚡ 安全调用 pageBuilder
+    return item.pageBuilder?.call() ??
+        Center(
           child: Text(
-            '未实现的设置页面：\n$route',
+            '未实现的设置页面：\n$currentRoute',
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.grey),
           ),
         );
-    }
   }
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/appbar/settings_app_bar.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/utils/storage.dart';
 import 'package:kazumi/utils/webdav.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:card_settings_ui/card_settings_ui.dart';
 
 class WebDavSettingsPage extends StatefulWidget {
@@ -112,7 +112,7 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
         onBackPressed(context);
       },
       child: Scaffold(
-        appBar: const SysAppBar(title: Text('同步设置')),
+        appBar: SettingsAppBar(),
         body: SettingsList(
           maxWidth: 1000,
           sections: [

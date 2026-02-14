@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:kazumi/bean/appbar/sys_app_bar.dart';
+import 'package:kazumi/bean/appbar/settings_app_bar.dart';
 import 'package:kazumi/utils/storage.dart';
 import 'package:card_settings_ui/card_settings_ui.dart';
 
@@ -38,7 +38,7 @@ class _DownloadSettingsPageState extends State<DownloadSettingsPage> {
   Widget build(BuildContext context) {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
     return Scaffold(
-      appBar: const SysAppBar(title: Text('下载设置')),
+      appBar: SettingsAppBar(),
       body: SettingsList(
         maxWidth: 1000,
         sections: [
