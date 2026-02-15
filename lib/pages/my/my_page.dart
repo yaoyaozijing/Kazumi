@@ -1,7 +1,6 @@
 import 'package:card_settings_ui/card_settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:kazumi/pages/menu/menu.dart';
 import 'package:provider/provider.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
@@ -61,6 +60,13 @@ class _MyPageState extends State<MyPage> {
                       fit: BoxFit.contain,
                     ),
                   ),
+                ),
+                SettingsTile.navigation(
+                  onPressed: (_) {
+                    Modular.to.pushNamed('/settings/about/');
+                  },
+                  leading: const Icon(Icons.info_outline_rounded),
+                  title: Text('关于Kazumi', style: TextStyle(fontFamily: fontFamily)),
                 ),
               ],
             ),
@@ -159,33 +165,12 @@ class _MyPageState extends State<MyPage> {
                 ),
                 SettingsTile.navigation(
                   onPressed: (_) {
-                    Modular.to.pushNamed('/settings/interface');
-                  },
-                  leading: const Icon(Icons.pages_rounded),
-                  title: Text('界面设置', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('设置应用界面样式',
-                      style: TextStyle(fontFamily: fontFamily)),
-                ),
-                SettingsTile.navigation(
-                  onPressed: (_) {
                     Modular.to.pushNamed('/settings/webdav/');
                   },
                   leading: const Icon(Icons.cloud),
                   title: Text('同步设置', style: TextStyle(fontFamily: fontFamily)),
                   description:
                       Text('设置同步参数', style: TextStyle(fontFamily: fontFamily)),
-                ),
-              ],
-            ),
-            SettingsSection(
-              title: Text('其他', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
-                SettingsTile.navigation(
-                  onPressed: (_) {
-                    Modular.to.pushNamed('/settings/about/');
-                  },
-                  leading: const Icon(Icons.info_outline_rounded),
-                  title: Text('关于', style: TextStyle(fontFamily: fontFamily)),
                 ),
               ],
             ),
