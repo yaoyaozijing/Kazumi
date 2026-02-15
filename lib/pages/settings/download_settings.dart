@@ -44,6 +44,9 @@ class _DownloadSettingsPageState extends State<DownloadSettingsPage> {
         sections: [
           SettingsSection(
             title: Text('并发设置', style: TextStyle(fontFamily: fontFamily)),
+            bottomInfo: Text(
+              '• 较高的并发可提升速度，但可能被服务器限制\n'
+              '• 修改后对新开始的下载生效'),
             tiles: [
               SettingsTile(
                 title: Text('同时下载集数', style: TextStyle(fontFamily: fontFamily)),
@@ -77,7 +80,7 @@ class _DownloadSettingsPageState extends State<DownloadSettingsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '每集同时下载 $parallelSegments 个分片',
+                      '每集同时下载 $parallelSegments 个视频片段',
                       style: TextStyle(fontFamily: fontFamily),
                     ),
                     Slider(
@@ -113,21 +116,6 @@ class _DownloadSettingsPageState extends State<DownloadSettingsPage> {
                   style: TextStyle(fontFamily: fontFamily),
                 ),
                 initialValue: downloadDanmaku,
-              ),
-            ],
-          ),
-          SettingsSection(
-            title: Text('说明', style: TextStyle(fontFamily: fontFamily)),
-            tiles: [
-              SettingsTile(
-                title: Text('关于并发设置', style: TextStyle(fontFamily: fontFamily)),
-                description: Text(
-                  '• 集数并发：同时下载多少集视频\n'
-                  '• 分片并发：每集内同时下载多少个视频片段\n'
-                  '• 较高的并发可提升速度，但可能被服务器限制\n'
-                  '• 修改后对新开始的下载生效',
-                  style: TextStyle(fontFamily: fontFamily),
-                ),
               ),
             ],
           ),

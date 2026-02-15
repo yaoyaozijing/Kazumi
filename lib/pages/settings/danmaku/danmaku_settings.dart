@@ -8,6 +8,7 @@ import 'package:kazumi/pages/popular/popular_controller.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:card_settings_ui/card_settings_ui.dart';
 import 'package:kazumi/utils/setting_tiles.dart';
+import 'package:kazumi/utils/settings_route.dart';
 
 class DanmakuSettingsPage extends StatefulWidget {
   const DanmakuSettingsPage({super.key});
@@ -152,9 +153,12 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                     danmakuBiliBiliSource = newSelection.contains('bilibili');
                     danmakuGamerSource = newSelection.contains('gamer');
                     danmakuDanDanSource = newSelection.contains('dandan');
-                    await setting.put(SettingBoxKey.danmakuBiliBiliSource, danmakuBiliBiliSource);
-                    await setting.put(SettingBoxKey.danmakuGamerSource, danmakuGamerSource);
-                    await setting.put(SettingBoxKey.danmakuDanDanSource, danmakuDanDanSource);
+                    await setting.put(SettingBoxKey.danmakuBiliBiliSource,
+                        danmakuBiliBiliSource);
+                    await setting.put(
+                        SettingBoxKey.danmakuGamerSource, danmakuGamerSource);
+                    await setting.put(
+                        SettingBoxKey.danmakuDanDanSource, danmakuDanDanSource);
                     setState(() {});
                   },
                   multiSelectionEnabled: true,
@@ -162,9 +166,10 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                 ),
                 SettingsTile.navigation(
                   onPressed: (_) {
-                    Modular.to.pushNamed('/settings/danmaku/shield');
+                    pushSettingsRoute('/settings/danmaku/shield');
                   },
-                  title: Text('关键词屏蔽', style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('关键词屏蔽', style: TextStyle(fontFamily: fontFamily)),
                 ),
               ],
             ),
@@ -185,7 +190,8 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                   ),
                 ),
                 SettingsTile(
-                  title: Text('弹幕持续时间', style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('弹幕持续时间', style: TextStyle(fontFamily: fontFamily)),
                   description: Slider(
                     value: defaultDanmakuDuration,
                     min: 2,
@@ -206,7 +212,8 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                     divisions: 30,
                     label: defaultDanmakuLineHeight.toStringAsFixed(1),
                     onChanged: (value) {
-                      updateDanmakuLineHeight(double.parse(value.toStringAsFixed(1)));
+                      updateDanmakuLineHeight(
+                          double.parse(value.toStringAsFixed(1)));
                     },
                   ),
                 ),
@@ -217,8 +224,10 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                         SettingBoxKey.danmakuFollowSpeed, danmakuFollowSpeed);
                     setState(() {});
                   },
-                  title: Text('弹幕跟随视频倍速', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('开启后弹幕速度会随视频倍速而改变', style: TextStyle(fontFamily: fontFamily)),
+                  title: Text('弹幕跟随视频倍速',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('开启后弹幕速度会随视频倍速而改变',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: danmakuFollowSpeed,
                 ),
                 SettingsTileSegmentedButton<String>(
@@ -238,8 +247,10 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                     danmakuBottom = newSelection.contains('bottom');
                     danmakuScroll = newSelection.contains('scroll');
                     await setting.put(SettingBoxKey.danmakuTop, danmakuTop);
-                    await setting.put(SettingBoxKey.danmakuBottom, danmakuBottom);
-                    await setting.put(SettingBoxKey.danmakuScroll, danmakuScroll);
+                    await setting.put(
+                        SettingBoxKey.danmakuBottom, danmakuBottom);
+                    await setting.put(
+                        SettingBoxKey.danmakuScroll, danmakuScroll);
                     setState(() {});
                   },
                   multiSelectionEnabled: true,
@@ -252,7 +263,8 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                     setState(() {});
                   },
                   title: Text('海量弹幕', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('弹幕过多时进行叠加绘制', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('弹幕过多时进行叠加绘制',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: danmakuMassive,
                 ),
               ],
@@ -305,7 +317,8 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                   ),
                 ),
                 SettingsTile(
-                  title: Text('弹幕不透明度', style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('弹幕不透明度', style: TextStyle(fontFamily: fontFamily)),
                   description: Slider(
                     value: defaultDanmakuOpacity,
                     min: 0.1,

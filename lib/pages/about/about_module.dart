@@ -10,8 +10,16 @@ class AboutModule extends Module {
 
   @override
   void routes(r) {
-    r.child("/", child: (_) => const AboutPage());
-    r.child("/logs", child: (_) => const LogsPage());
+    r.child(
+      "/",
+      child: (_) => const AboutPage(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.child(
+      "/logs",
+      child: (_) => const LogsPage(),
+      transition: TransitionType.defaultTransition,
+    );
     r.child(
       "/license",
       child: (_) => const LicensePage(
@@ -19,6 +27,7 @@ class AboutModule extends Module {
         applicationVersion: Api.version,
         applicationLegalese: '开源许可证',
       ),
+      transition: TransitionType.defaultTransition,
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/error_widget.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
+import 'package:kazumi/utils/settings_route.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:kazumi/utils/storage.dart';
 
@@ -197,7 +198,7 @@ class _PluginShopPageState extends State<PluginShopPage> {
         actions: [
           GeneralErrorButton(
             onPressed: () {
-              Modular.to.pushNamed('/settings/webdav/');
+              pushSettingsRoute('/settings/webdav/');
             },
             text: enableGitProxy ? '禁用镜像' : '启用镜像',
           ),

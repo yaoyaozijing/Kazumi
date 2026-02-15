@@ -17,23 +17,76 @@ import 'package:kazumi/pages/download/download_page_module.dart';
 class SettingsModule extends Module {
   @override
   void routes(r) {
-    r.child("/theme", child: (_) => const ThemeSettingsPage());
+    r.child(
+      "/theme",
+      child: (_) => const ThemeSettingsPage(),
+      transition: TransitionType.defaultTransition,
+    );
     r.child(
       "/theme/display",
       child: (_) => const SetDisplayMode(),
+      transition: TransitionType.defaultTransition,
     );
-    r.child("/keyboard", child: (_) => const KeyboardSettingsPage());
-    r.child("/player", child: (_) => const PlayerSettingsPage());
-    r.child("/player/decoder", child: (_) => const DecoderSettings());
-    r.child("/player/renderer", child: (_) => const RendererSettings());
-    r.module("/proxy", module: ProxyModule());
+    r.child(
+      "/keyboard",
+      child: (_) => const KeyboardSettingsPage(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.child(
+      "/player",
+      child: (_) => const PlayerSettingsPage(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.child(
+      "/player/decoder",
+      child: (_) => const DecoderSettings(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.child(
+      "/player/renderer",
+      child: (_) => const RendererSettings(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.module(
+      "/proxy",
+      module: ProxyModule(),
+      transition: TransitionType.defaultTransition,
+    );
     // r.child("/other", child: (_) => const OtherSettingsPage());
-    r.module("/webdav", module: WebDavModule());
-    r.module("/about", module: AboutModule());
-    r.module("/plugin", module: PluginModule());
-    r.module("/history", module: HistoryModule());
-    r.module("/danmaku", module: DanmakuModule());
-    r.module("/download", module: DownloadModule());
-    r.child("/download-settings", child: (_) => const DownloadSettingsPage());
+    r.module(
+      "/webdav",
+      module: WebDavModule(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.module(
+      "/about",
+      module: AboutModule(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.module(
+      "/plugin",
+      module: PluginModule(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.module(
+      "/history",
+      module: HistoryModule(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.module(
+      "/danmaku",
+      module: DanmakuModule(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.module(
+      "/download",
+      module: DownloadModule(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.child(
+      "/download-settings",
+      child: (_) => const DownloadSettingsPage(),
+      transition: TransitionType.defaultTransition,
+    );
   }
 }

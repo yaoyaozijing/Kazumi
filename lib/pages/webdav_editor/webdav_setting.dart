@@ -3,7 +3,6 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/utils/storage.dart';
 import 'package:kazumi/utils/webdav.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:card_settings_ui/card_settings_ui.dart';
 
@@ -19,6 +18,13 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
   late bool webDavEnable;
   late bool webDavEnableHistory;
   late bool enableGitProxy;
+  bool webDavConfigExpanded = false;
+  bool passwordVisible = false;
+  final TextEditingController webDavURLController = TextEditingController();
+  final TextEditingController webDavUsernameController =
+      TextEditingController();
+  final TextEditingController webDavPasswordController =
+      TextEditingController();
 
   @override
   void initState() {
@@ -28,6 +34,20 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
         setting.get(SettingBoxKey.webDavEnableHistory, defaultValue: false);
     enableGitProxy =
         setting.get(SettingBoxKey.enableGitProxy, defaultValue: false);
+    webDavURLController.text =
+        setting.get(SettingBoxKey.webDavURL, defaultValue: '');
+    webDavUsernameController.text =
+        setting.get(SettingBoxKey.webDavUsername, defaultValue: '');
+    webDavPasswordController.text =
+        setting.get(SettingBoxKey.webDavPassword, defaultValue: '');
+  }
+
+  @override
+  void dispose() {
+    webDavURLController.dispose();
+    webDavUsernameController.dispose();
+    webDavPasswordController.dispose();
+    super.dispose();
   }
 
   void onBackPressed(BuildContext context) {
@@ -103,6 +123,42 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
     }
   }
 
+  Future<void> saveAndTestWebdavConfig() async {
+    await setting.put(SettingBoxKey.webDavURL, webDavURLController.text.trim());
+    await setting.put(
+        SettingBoxKey.webDavUsername, webDavUsernameController.text.trim());
+    await setting.put(
+        SettingBoxKey.webDavPassword, webDavPasswordController.text.trim());
+    final webDav = WebDav();
+    try {
+      await webDav.init();
+    } catch (e) {
+      KazumiDialog.showToast(message: '配置失败 ${e.toString()}');
+      await setting.put(SettingBoxKey.webDavEnable, false);
+      if (mounted) {
+        setState(() {
+          webDavEnable = false;
+          webDavEnableHistory = false;
+        });
+      }
+      return;
+    }
+    KazumiDialog.showToast(message: '配置成功, 开始测试');
+    try {
+      await webDav.ping();
+      KazumiDialog.showToast(message: '测试成功');
+    } catch (e) {
+      KazumiDialog.showToast(message: '测试失败 ${e.toString()}');
+      await setting.put(SettingBoxKey.webDavEnable, false);
+      if (mounted) {
+        setState(() {
+          webDavEnable = false;
+          webDavEnableHistory = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
@@ -126,8 +182,10 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
                         SettingBoxKey.enableGitProxy, enableGitProxy);
                     setState(() {});
                   },
-                  title: Text('Github镜像', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('使用镜像访问规则托管仓库', style: TextStyle(fontFamily: fontFamily)),
+                  title: Text('Github镜像',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('使用镜像访问规则托管仓库',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: enableGitProxy,
                 ),
               ],
@@ -156,7 +214,8 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
                       setState(() {});
                     }
                   },
-                  title: Text('WEBDAV同步', style: TextStyle(fontFamily: fontFamily)),
+                  title: Text('WEBDAV同步',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: webDavEnable,
                 ),
                 SettingsTile.switchTile(
@@ -170,20 +229,92 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
                         SettingBoxKey.webDavEnableHistory, webDavEnableHistory);
                     setState(() {});
                   },
-                  title: Text('观看记录同步', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('允许自动同步观看记录', style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('观看记录同步', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('允许自动同步观看记录',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: webDavEnableHistory,
                 ),
-                SettingsTile.navigation(
-                  onPressed: (_) async {
-                    Modular.to.pushNamed('/settings/webdav/editor');
+                SettingsTile(
+                  onPressed: (_) {
+                    setState(() {
+                      webDavConfigExpanded = !webDavConfigExpanded;
+                    });
                   },
-                  title: Text('WEBDAV配置', style: TextStyle(fontFamily: fontFamily)),
+                  title: Text('WEBDAV配置',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  description: Text(
+                      webDavConfigExpanded ? '点击收起配置区域' : '点击展开配置区域',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  trailing: Icon(
+                    webDavConfigExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                  ),
                 ),
+                if (webDavConfigExpanded)
+                  SettingsTile(
+                    title: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: webDavURLController,
+                            decoration: const InputDecoration(
+                              labelText: 'URL',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: webDavUsernameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Username',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: webDavPasswordController,
+                            obscureText: !passwordVisible,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              border: const OutlineInputBorder(),
+                              suffixIcon: IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    passwordVisible = !passwordVisible;
+                                  });
+                                },
+                                icon: Icon(
+                                  passwordVisible
+                                      ? Icons.visibility_rounded
+                                      : Icons.visibility_off_rounded,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (webDavConfigExpanded)
+                  SettingsTile(
+                    onPressed: (_) {
+                      saveAndTestWebdavConfig();
+                    },
+                    title:
+                        Text('保存并测试', style: TextStyle(fontFamily: fontFamily)),
+                    description: Text('保存当前配置并执行连接测试',
+                        style: TextStyle(fontFamily: fontFamily)),
+                    trailing: const Icon(Icons.playlist_add_check_rounded),
+                  ),
               ],
             ),
             SettingsSection(
-              bottomInfo: Text('立即上传观看记录到WEBDAV', style: TextStyle(fontFamily: fontFamily)),
+              bottomInfo: Text('立即上传观看记录到WEBDAV',
+                  style: TextStyle(fontFamily: fontFamily)),
               tiles: [
                 SettingsTile(
                   trailing: const Icon(Icons.cloud_upload_rounded),
@@ -195,7 +326,8 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
               ],
             ),
             SettingsSection(
-              bottomInfo: Text('立即下载观看记录到本地', style: TextStyle(fontFamily: fontFamily)),
+              bottomInfo:
+                  Text('立即下载观看记录到本地', style: TextStyle(fontFamily: fontFamily)),
               tiles: [
                 SettingsTile(
                   trailing: const Icon(Icons.cloud_download_rounded),

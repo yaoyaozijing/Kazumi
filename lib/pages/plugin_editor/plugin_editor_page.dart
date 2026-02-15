@@ -3,6 +3,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
+import 'package:kazumi/utils/settings_route.dart';
 
 class PluginEditorPage extends StatefulWidget {
   const PluginEditorPage({
@@ -131,7 +132,8 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                 const SizedBox(height: 20),
                 ExpansionTile(
                   title: const Text('高级选项'),
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero),
                   children: [
                     SwitchListTile(
                       title: const Text('简易解析'),
@@ -219,7 +221,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                   chapterRoads: chapterRoadsController.text,
                   chapterResult: chapterResultController.text,
                   referer: refererController.text);
-              Modular.to.pushNamed('/settings/plugin/test', arguments: pluginText);
+              pushSettingsRoute('/settings/plugin/test', arguments: pluginText);
             },
           ),
           SizedBox(width: 15),

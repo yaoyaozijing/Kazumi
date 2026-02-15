@@ -15,6 +15,7 @@ import 'package:kazumi/utils/logger.dart';
 import 'package:kazumi/pages/menu/menu.dart';
 import 'package:kazumi/utils/storage.dart';
 import 'package:kazumi/bean/appbar/drag_to_move_bar.dart' as dtb;
+import 'package:kazumi/utils/settings_route.dart';
 
 class PopularPage extends StatefulWidget {
   const PopularPage({super.key});
@@ -63,7 +64,8 @@ class _PopularPageState extends State<PopularPage>
     if (scrollController.position.pixels >=
             scrollController.position.maxScrollExtent - 200 &&
         !popularController.isLoadingMore) {
-      KazumiLogger().i('PopularPageController: Fetching next recommendation batch');
+      KazumiLogger()
+          .i('PopularPageController: Fetching next recommendation batch');
       if (popularController.currentTag != '') {
         popularController.queryBangumiByTag();
       } else {
@@ -275,7 +277,7 @@ class _PopularPageState extends State<PopularPage>
     actions.add(
       IconButton(
         tooltip: '历史记录',
-        onPressed: () => Modular.to.pushNamed('/settings/history/'),
+        onPressed: () => pushSettingsRoute('/settings/history/'),
         icon: const Icon(Icons.history),
       ),
     );

@@ -8,7 +8,15 @@ class DanmakuModule extends Module {
 
   @override
   void routes(r) {
-    r.child("/", child: (_) => const DanmakuSettingsPage());
-    r.child("/shield", child: (_) => const DanmakuShieldSettings());
+    r.child(
+      "/",
+      child: (_) => const DanmakuSettingsPage(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.child(
+      "/shield",
+      child: (_) => const DanmakuShieldSettings(),
+      transition: TransitionType.defaultTransition,
+    );
   }
 }

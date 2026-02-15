@@ -8,6 +8,7 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
+import 'package:kazumi/utils/settings_route.dart';
 
 class PluginViewPage extends StatefulWidget {
   const PluginViewPage({super.key});
@@ -49,7 +50,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                 title: const Text('新建规则'),
                 onTap: () {
                   KazumiDialog.dismiss();
-                  Modular.to.pushNamed('/settings/plugin/editor',
+                  pushSettingsRoute('/settings/plugin/editor',
                       arguments: Plugin.fromTemplate());
                 },
               ),
@@ -58,7 +59,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                 title: const Text('从规则仓库导入'),
                 onTap: () {
                   KazumiDialog.dismiss();
-                  Modular.to.pushNamed('/settings/plugin/shop',
+                  pushSettingsRoute('/settings/plugin/shop',
                       arguments: Plugin.fromTemplate());
                 },
               ),
@@ -435,7 +436,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
         MenuItemButton(
           requestFocusOnHover: false,
           onPressed: () {
-            Modular.to.pushNamed('/settings/plugin/editor', arguments: plugin);
+            pushSettingsRoute('/settings/plugin/editor', arguments: plugin);
           },
           child: Container(
             height: 48,
@@ -455,7 +456,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
         MenuItemButton(
           requestFocusOnHover: false,
           onPressed: () {
-            Modular.to.pushNamed('/settings/plugin/test', arguments: plugin);
+            pushSettingsRoute('/settings/plugin/test', arguments: plugin);
           },
           child: Container(
             height: 48,

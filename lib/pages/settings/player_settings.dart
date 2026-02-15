@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/storage.dart';
 import 'package:kazumi/utils/setting_tiles.dart';
+import 'package:kazumi/utils/settings_route.dart';
 import 'package:card_settings_ui/card_settings_ui.dart';
 
 class PlayerSettingsPage extends StatefulWidget {
@@ -19,6 +19,7 @@ class PlayerSettingsPage extends StatefulWidget {
 
 class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
   Box setting = GStorage.setting;
+  late final TextEditingController _buttonSkipTimeController;
   late double defaultPlaySpeed;
   late int defaultAspectRatioType;
   late bool hAenable;
@@ -67,9 +68,20 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
         setting.get(SettingBoxKey.buttonSkipTime, defaultValue: 80);
     playerArrowKeySkipTime =
         setting.get(SettingBoxKey.arrowKeySkipTime, defaultValue: 10);
-    defaultSuperResolutionType = setting.get(SettingBoxKey.defaultSuperResolutionType, defaultValue: 1);
-    superResolutionWarn = setting.get(SettingBoxKey.superResolutionWarn, defaultValue: false);
-    hardwareDecoder = setting.get(SettingBoxKey.hardwareDecoder, defaultValue: 'auto-safe');
+    defaultSuperResolutionType =
+        setting.get(SettingBoxKey.defaultSuperResolutionType, defaultValue: 1);
+    superResolutionWarn =
+        setting.get(SettingBoxKey.superResolutionWarn, defaultValue: false);
+    hardwareDecoder =
+        setting.get(SettingBoxKey.hardwareDecoder, defaultValue: 'auto-safe');
+    _buttonSkipTimeController =
+        TextEditingController(text: playerButtonSkipTime.toString());
+  }
+
+  @override
+  void dispose() {
+    _buttonSkipTimeController.dispose();
+    super.dispose();
   }
 
   void onBackPressed(BuildContext context) {
@@ -114,71 +126,31 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
     });
   }
 
-  Future<void> updateButtonSkipTime() async {
-    final int? newButtonSkipTime = await _showSkipTimeChangeDialog(
-        title: '顶部按钮快进时长', initialValue: playerButtonSkipTime.toString());
-    print('新设置的顶部按钮快进时长: $newButtonSkipTime');
-
-    if (newButtonSkipTime != null &&
-        newButtonSkipTime != playerButtonSkipTime) {
-      setting.put(SettingBoxKey.buttonSkipTime, newButtonSkipTime);
-      setState(() {
-        playerButtonSkipTime = newButtonSkipTime;
-      });
-    }
+  void _setButtonSkipTime(int value) {
+    setting.put(SettingBoxKey.buttonSkipTime, value);
+    setState(() {
+      playerButtonSkipTime = value;
+      if (_buttonSkipTimeController.text != value.toString()) {
+        _buttonSkipTimeController.text = value.toString();
+      }
+    });
   }
 
-  Future<int?> _showSkipTimeChangeDialog(
-      {required String title, required String initialValue}) async {
-    return KazumiDialog.show<int>(builder: (context) {
-      String input = "";
-      return AlertDialog(
-        title: Text(title),
-        content: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-          return TextField(
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
-            ],
-            decoration: InputDecoration(
-              floatingLabelBehavior:
-                  FloatingLabelBehavior.never, // 控制label的显示方式
-              labelText: initialValue,
-            ),
-            onChanged: (value) {
-              input = value;
-            },
-          );
-        }),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => KazumiDialog.dismiss(),
-            child: Text(
-              '取消',
-              style: TextStyle(color: Theme.of(context).colorScheme.outline),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              final int? newValue = int.tryParse(input);
+  bool get _hasPendingButtonSkipTimeChange {
+    final text = _buttonSkipTimeController.text.trim();
+    if (text.isEmpty) return false;
+    final value = int.tryParse(text);
+    return value != null && value > 0 && value != playerButtonSkipTime;
+  }
 
-              if (newValue == null) {
-                KazumiDialog.showToast(message: '请输入数字');
-                return;
-              }
-
-              if (newValue <= 0) {
-                KazumiDialog.showToast(message: '请输入大于0的数字');
-                return;
-              }
-              // 以新设置的值弹出
-              KazumiDialog.dismiss(popWith: newValue);
-            },
-            child: const Text('确定'),
-          ),
-        ],
-      );
-    });
+  void _confirmButtonSkipTimeInput() {
+    final text = _buttonSkipTimeController.text.trim();
+    final value = int.tryParse(text);
+    if (value == null || value <= 0) {
+      KazumiDialog.showToast(message: '请输入大于0的数字');
+      return;
+    }
+    _setButtonSkipTime(value);
   }
 
   @override
@@ -207,22 +179,29 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                 ),
                 SettingsTile.navigation(
                   onPressed: (_) async {
-                    await Modular.to.pushNamed('/settings/player/decoder');
+                    await pushSettingsRoute('/settings/player/decoder');
                     setState(() {
-                      hardwareDecoder = setting.get(SettingBoxKey.hardwareDecoder, defaultValue: 'auto-safe');
+                      hardwareDecoder = setting.get(
+                          SettingBoxKey.hardwareDecoder,
+                          defaultValue: 'auto-safe');
                     });
                   },
-                  title: Text('硬件解码器', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('仅在硬件解码启用时生效', style: TextStyle(fontFamily: fontFamily)),
-                  value: Text(hardwareDecoder, style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('硬件解码器', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('仅在硬件解码启用时生效',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  value: Text(hardwareDecoder,
+                      style: TextStyle(fontFamily: fontFamily)),
                 ),
                 if (Platform.isAndroid) ...[
                   SettingsTile.navigation(
                     onPressed: (_) async {
-                      await Modular.to.pushNamed('/settings/player/renderer');
+                      await pushSettingsRoute('/settings/player/renderer');
                     },
-                    title: Text('视频渲染器', style: TextStyle(fontFamily: fontFamily)),
-                    description: Text('选择视频输出方式', style: TextStyle(fontFamily: fontFamily)),
+                    title:
+                        Text('视频渲染器', style: TextStyle(fontFamily: fontFamily)),
+                    description: Text('选择视频输出方式',
+                        style: TextStyle(fontFamily: fontFamily)),
                   ),
                 ],
                 SettingsTile.switchTile(
@@ -232,8 +211,10 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                         SettingBoxKey.lowMemoryMode, lowMemoryMode);
                     setState(() {});
                   },
-                  title: Text('低内存模式', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('禁用高级缓存以减少内存占用', style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('低内存模式', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('禁用高级缓存以减少内存占用',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: lowMemoryMode,
                 ),
                 if (Platform.isAndroid) ...[
@@ -244,14 +225,19 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                           androidEnableOpenSLES);
                       setState(() {});
                     },
-                    title: Text('低延迟音频', style: TextStyle(fontFamily: fontFamily)),
-                    description: Text('启用OpenSLES音频输出以降低延时', style: TextStyle(fontFamily: fontFamily)),
+                    title:
+                        Text('低延迟音频', style: TextStyle(fontFamily: fontFamily)),
+                    description: Text('启用OpenSLES音频输出以降低延时',
+                        style: TextStyle(fontFamily: fontFamily)),
                     initialValue: androidEnableOpenSLES,
                   ),
                 ],
                 SettingsTileSegmentedButton<int>(
                   title: Text('超分辨率', style: TextStyle(fontFamily: fontFamily)),
-                  segments: superResolutionTypeMap.entries.map((entry) => ButtonSegment<int>(value: entry.key, label: Text(entry.value))).toList(),
+                  segments: superResolutionTypeMap.entries
+                      .map((entry) => ButtonSegment<int>(
+                          value: entry.key, label: Text(entry.value)))
+                      .toList(),
                   selected: {defaultSuperResolutionType},
                   onSelectionChanged: (Set<int> newSelection) {
                     updateDefaultSuperResolutionType(newSelection.first);
@@ -261,12 +247,16 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   onToggle: (value) async {
                     updateSuperResolutionWarn(value ?? !superResolutionWarn);
                   },
-                  title: Text('关闭超分辨率提示', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('关闭每次启用超分辨率时的提示', style: TextStyle(fontFamily: fontFamily)),
+                  title: Text('关闭超分辨率提示',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('关闭每次启用超分辨率时的提示',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: superResolutionWarn,
                 ),
               ],
-              bottomInfo: Text('超分辨率基于Anime4K，需要启用硬件解码, 若启用硬件解码后仍然不生效, 尝试切换硬件解码器为 auto-copy', style: TextStyle(fontFamily: fontFamily)),
+              bottomInfo: Text(
+                  '超分辨率基于Anime4K，需要启用硬件解码, 若启用硬件解码后仍然不生效, 尝试切换硬件解码器为 auto-copy',
+                  style: TextStyle(fontFamily: fontFamily)),
             ),
             SettingsSection(
               tiles: [
@@ -277,7 +267,8 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     setState(() {});
                   },
                   title: Text('自动跳转', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('跳转到上次播放位置', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('跳转到上次播放位置',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: playResume,
                 ),
                 SettingsTile.switchTile(
@@ -287,17 +278,20 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     setState(() {});
                   },
                   title: Text('自动连播', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('当前视频播放完毕后自动播放下一集', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('当前视频播放完毕后自动播放下一集',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: autoPlayNext,
                 ),
                 SettingsTile.switchTile(
                   onToggle: (value) async {
                     forceAdBlocker = value ?? !forceAdBlocker;
-                    await setting.put(SettingBoxKey.forceAdBlocker, forceAdBlocker);
+                    await setting.put(
+                        SettingBoxKey.forceAdBlocker, forceAdBlocker);
                     setState(() {});
                   },
                   title: Text('广告过滤', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('强制启用HLS广告过滤，忽略规则设置', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('强制启用HLS广告过滤，忽略规则设置',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: forceAdBlocker,
                 ),
                 SettingsTile.switchTile(
@@ -308,7 +302,8 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     setState(() {});
                   },
                   title: Text('禁用动画', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('禁用播放器内的过渡动画', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('禁用播放器内的过渡动画',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: playerDisableAnimations,
                 ),
                 SettingsTile.switchTile(
@@ -318,7 +313,8 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     setState(() {});
                   },
                   title: Text('隐身模式', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('不保留观看记录', style: TextStyle(fontFamily: fontFamily)),
+                  description:
+                      Text('不保留观看记录', style: TextStyle(fontFamily: fontFamily)),
                   initialValue: privateMode,
                 ),
               ],
@@ -333,7 +329,8 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     setState(() {});
                   },
                   title: Text('错误提示', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('显示播放器内部错误提示', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('显示播放器内部错误提示',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: showPlayerError,
                 ),
                 SettingsTile.switchTile(
@@ -344,12 +341,16 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     setState(() {});
                   },
                   title: Text('调试模式', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('记录播放器内部日志', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('记录播放器内部日志',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: playerDebugMode,
                 ),
                 SettingsTileSegmentedButton<int>(
                   title: Text('日志等级', style: TextStyle(fontFamily: fontFamily)),
-                  segments: playerLogLevelMap.entries.map((entry) => ButtonSegment<int>(value: entry.key, label: Text(entry.value))).toList(),
+                  segments: playerLogLevelMap.entries
+                      .map((entry) => ButtonSegment<int>(
+                          value: entry.key, label: Text(entry.value)))
+                      .toList(),
                   selected: {playerLogLevel},
                   onSelectionChanged: (Set<int> newSelection) {
                     updatePlayerLogLevel(newSelection.first);
@@ -394,19 +395,52 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                       }
                     },
                   ),
-                  title: Text('左右方向键的快进/快退秒数', style: TextStyle(fontFamily: fontFamily)),
+                  title: Text('左右方向键的快进/快退秒数',
+                      style: TextStyle(fontFamily: fontFamily)),
                 ),
-                SettingsTile.navigation(
-                  onPressed: (_) async {
-                    await updateButtonSkipTime();
-                  },
+                SettingsTile(
                   title: Text('跳过时长', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('顶栏跳过按钮的秒数', style: TextStyle(fontFamily: fontFamily)),
-                  value: Text('$playerButtonSkipTime 秒', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('顶栏跳过按钮的秒数',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  trailing: SizedBox(
+                    width: 100,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _buttonSkipTimeController,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.done,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              hintText: '秒数',
+                              suffixText: '秒',
+                            ),
+                            onChanged: (_) {
+                              setState(() {});
+                            },
+                            onSubmitted: (_) => _confirmButtonSkipTimeInput(),
+                          ),
+                        ),
+                        if (_hasPendingButtonSkipTimeChange)
+                          IconButton(
+                            icon: const Icon(Icons.check),
+                            tooltip: '确认',
+                            onPressed: _confirmButtonSkipTimeInput,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
                 SettingsTileSegmentedButton<int>(
                   title: Text('视频比例', style: TextStyle(fontFamily: fontFamily)),
-                  segments: aspectRatioTypeMap.entries.map((entry) => ButtonSegment<int>(value: entry.key, label: Text(entry.value))).toList(),
+                  segments: aspectRatioTypeMap.entries
+                      .map((entry) => ButtonSegment<int>(
+                          value: entry.key, label: Text(entry.value)))
+                      .toList(),
                   selected: {defaultAspectRatioType},
                   onSelectionChanged: (Set<int> newSelection) {
                     updateDefaultAspectRatioType(newSelection.first);

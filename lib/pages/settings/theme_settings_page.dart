@@ -14,7 +14,7 @@ import 'package:card_settings_ui/card_settings_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:kazumi/utils/setting_tiles.dart';
 import 'package:kazumi/bean/card/color_scheme_seloctor_card.dart';
-
+import 'package:kazumi/utils/settings_route.dart';
 
 class ThemeSettingsPage extends StatefulWidget {
   const ThemeSettingsPage({super.key});
@@ -39,7 +39,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   final MenuController menuController = MenuController();
   final exitBehaviorTitles = <String>['退出', '进托盘', '询问'];
   late int exitBehavior =
-    setting.get(SettingBoxKey.exitBehavior, defaultValue: 2);
+      setting.get(SettingBoxKey.exitBehavior, defaultValue: 2);
 
   static const Map<String, String> defaultPageMap = {
     '/tab/popular/': '推荐',
@@ -238,14 +238,17 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                     updateOledEnhance();
                     setState(() {});
                   },
-                  title: Text('OLED优化', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('深色模式下使用纯黑背景', style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('OLED优化', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('深色模式下使用纯黑背景',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: oledEnhance,
                 ),
                 SettingsTile.switchTile(
                   onToggle: (value) async {
                     useSystemFont = value ?? !useSystemFont;
-                    await setting.put(SettingBoxKey.useSystemFont, useSystemFont);
+                    await setting.put(
+                        SettingBoxKey.useSystemFont, useSystemFont);
                     themeProvider.setFontFamily(useSystemFont);
                     dynamic color;
                     if (defaultThemeColor == 'default') {
@@ -256,8 +259,10 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                     setTheme(color);
                     setState(() {});
                   },
-                  title: Text('使用系统字体', style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('关闭后使用 MI Sans 字体', style: TextStyle(fontFamily: fontFamily)),
+                  title:
+                      Text('使用系统字体', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('关闭后使用 MI Sans 字体',
+                      style: TextStyle(fontFamily: fontFamily)),
                   initialValue: useSystemFont,
                 ),
                 if (Utils.isDesktop())
@@ -268,19 +273,23 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                           SettingBoxKey.showWindowButton, showWindowButton);
                       setState(() {});
                     },
-                    title: Text('使用系统标题栏', style: TextStyle(fontFamily: fontFamily)),
-                    description: Text('重启应用生效', style: TextStyle(fontFamily: fontFamily)),
+                    title: Text('使用系统标题栏',
+                        style: TextStyle(fontFamily: fontFamily)),
+                    description: Text('重启应用生效',
+                        style: TextStyle(fontFamily: fontFamily)),
                     initialValue: showWindowButton,
                   ),
                 if (Platform.isAndroid)
                   SettingsTile.navigation(
                     onPressed: (_) async {
-                      Modular.to.pushNamed('/settings/theme/display');
+                      pushSettingsRoute('/settings/theme/display');
                     },
-                    title: Text('屏幕帧率', style: TextStyle(fontFamily: fontFamily)),
+                    title:
+                        Text('屏幕帧率', style: TextStyle(fontFamily: fontFamily)),
                   ),
               ],
-              bottomInfo: Text('动态配色仅支持安卓12及以上和桌面平台', style: TextStyle(fontFamily: fontFamily)),
+              bottomInfo: Text('动态配色仅支持安卓12及以上和桌面平台',
+                  style: TextStyle(fontFamily: fontFamily)),
             ),
             SettingsSection(
               title: Text('行为', style: TextStyle(fontFamily: fontFamily)),
@@ -314,7 +323,8 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                 ),
                 if (Utils.isDesktop())
                   SettingsTileSegmentedButton<int>(
-                    title: Text('关闭窗口时', style: TextStyle(fontFamily: fontFamily)),
+                    title:
+                        Text('关闭窗口时', style: TextStyle(fontFamily: fontFamily)),
                     segments: [
                       for (int i = 0; i < exitBehaviorTitles.length; i++)
                         ButtonSegment<int>(
