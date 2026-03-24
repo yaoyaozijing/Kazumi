@@ -178,6 +178,23 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   Future<dynamic> _handleIntentChannelCall(MethodCall call) async {
+    if (Platform.isIOS && call.method == 'onIosPipStopped') {
+      final dynamic args = call.arguments;
+      final num? positionNum = args is Map ? args['position'] as num? : null;
+      final int position = positionNum?.toInt() ?? 0;
+      final bool playing =
+          args is Map ? args['playing'] as bool? ?? false : false;
+      if (!mounted || playerController.loading) {
+        return;
+      }
+      await playerController.seek(Duration(milliseconds: position));
+      if (playing) {
+        await playerController.play();
+      } else {
+        await playerController.pause();
+      }
+      return;
+    }
     if (!Platform.isAndroid || call.method != 'onPipAction') {
       return;
     }
@@ -1429,8 +1446,10 @@ class _PlayerItemState extends State<PlayerItem>
       FlutterVolumeController.setIOSAudioSessionCategory(
           category: AudioSessionCategory.playback);
     }
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid || Platform.isIOS) {
       _intentChannel.setMethodCallHandler(_handleIntentChannelCall);
+    }
+    if (Platform.isAndroid) {
       unawaited(_updateAndroidPIPActions(force: true));
     }
     WidgetsBinding.instance.addObserver(this);
@@ -1493,7 +1512,7 @@ class _PlayerItemState extends State<PlayerItem>
     animationController?.dispose();
     animationController = null;
     _disposePlayerMenu();
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid || Platform.isIOS) {
       _intentChannel.setMethodCallHandler(null);
     }
     // Reset player panel state

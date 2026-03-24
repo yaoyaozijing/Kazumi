@@ -436,6 +436,10 @@ class Utils {
     return Platform.isAndroid;
   }
 
+  static bool isIOS() {
+    return Platform.isIOS;
+  }
+
   /// 判断设备是否为宽屏
   static bool isWideScreen() {
     final MediaQueryData mediaQuery = MediaQueryData.fromView(
@@ -580,6 +584,46 @@ class Utils {
       return entered ?? false;
     } on PlatformException catch (e) {
       KazumiLogger().e("Failed to enter Android PIP mode: '${e.message}'.");
+      return false;
+    }
+  }
+
+  static Future<bool> isIOSPIPSupported() async {
+    if (!Platform.isIOS) {
+      return false;
+    }
+    const platform = MethodChannel('com.predidit.kazumi/intent');
+    try {
+      final bool? supported =
+          await platform.invokeMethod('isPictureInPictureSupported');
+      return supported ?? false;
+    } on PlatformException catch (e) {
+      KazumiLogger().e("Failed to check iOS PIP support: '${e.message}'.");
+      return false;
+    }
+  }
+
+  static Future<bool> enterIOSPIPWindow({
+    required String url,
+    required String referer,
+    required int position,
+    required bool playing,
+  }) async {
+    if (!Platform.isIOS) {
+      return false;
+    }
+    const platform = MethodChannel('com.predidit.kazumi/intent');
+    try {
+      final bool? entered =
+          await platform.invokeMethod('enterPictureInPictureMode', {
+        'url': url,
+        'referer': referer,
+        'position': position,
+        'playing': playing,
+      });
+      return entered ?? false;
+    } on PlatformException catch (e) {
+      KazumiLogger().e("Failed to enter iOS PIP mode: '${e.message}'.");
       return false;
     }
   }

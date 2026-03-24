@@ -561,7 +561,7 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
             ),
             // 跳过
             forwardIcon(),
-            if (Utils.isDesktop() || Utils.isAndroid())
+            if (Utils.isDesktop() || Utils.isAndroid() || Utils.isIOS())
               IconButton(
                   onPressed: () async {
                     if (Utils.isDesktop()) {
@@ -573,34 +573,57 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                       videoPageController.isPip = !videoPageController.isPip;
                       return;
                     }
-                    final bool supported = await Utils.isAndroidPIPSupported();
+                    if (Utils.isAndroid()) {
+                      final bool supported =
+                          await Utils.isAndroidPIPSupported();
+                      if (!supported) {
+                        KazumiDialog.showToast(message: '当前设备不支持画中画');
+                        return;
+                      }
+                      final bool canSkipToPrevious =
+                          videoPageController.currentEpisode > 1;
+                      bool canSkipToNext = false;
+                      if (videoPageController.roadList.isNotEmpty &&
+                          videoPageController.currentRoad >= 0 &&
+                          videoPageController.currentRoad <
+                              videoPageController.roadList.length) {
+                        final int totalEpisodes = videoPageController
+                            .roadList[videoPageController.currentRoad]
+                            .data
+                            .length;
+                        canSkipToNext =
+                            videoPageController.currentEpisode < totalEpisodes;
+                      }
+                      await Utils.updateAndroidPIPActions(
+                        playing: playerController.playing,
+                        canSkipToNext: canSkipToNext,
+                        canSkipToPrevious: canSkipToPrevious,
+                        danmakuEnabled: playerController.danmakuOn,
+                      );
+                      final bool entered = await Utils.enterAndroidPIPWindow();
+                      if (!entered) {
+                        KazumiDialog.showToast(message: '进入画中画失败');
+                      }
+                      return;
+                    }
+
+                    final bool supported = await Utils.isIOSPIPSupported();
                     if (!supported) {
                       KazumiDialog.showToast(message: '当前设备不支持画中画');
                       return;
                     }
-                    final bool canSkipToPrevious =
-                        videoPageController.currentEpisode > 1;
-                    bool canSkipToNext = false;
-                    if (videoPageController.roadList.isNotEmpty &&
-                        videoPageController.currentRoad >= 0 &&
-                        videoPageController.currentRoad <
-                            videoPageController.roadList.length) {
-                      final int totalEpisodes = videoPageController
-                          .roadList[videoPageController.currentRoad]
-                          .data
-                          .length;
-                      canSkipToNext =
-                          videoPageController.currentEpisode < totalEpisodes;
-                    }
-                    await Utils.updateAndroidPIPActions(
+                    final bool entered = await Utils.enterIOSPIPWindow(
+                      url: playerController.videoUrl,
+                      referer: playerController.referer,
+                      position: playerController.currentPosition.inMilliseconds,
                       playing: playerController.playing,
-                      canSkipToNext: canSkipToNext,
-                      canSkipToPrevious: canSkipToPrevious,
-                      danmakuEnabled: playerController.danmakuOn,
                     );
-                    final bool entered = await Utils.enterAndroidPIPWindow();
                     if (!entered) {
                       KazumiDialog.showToast(message: '进入画中画失败');
+                      return;
+                    }
+                    if (playerController.playing) {
+                      await playerController.pause();
                     }
                   },
                   tooltip: '画中画',
