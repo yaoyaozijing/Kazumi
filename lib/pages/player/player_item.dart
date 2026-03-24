@@ -121,6 +121,13 @@ class _PlayerItemState extends State<PlayerItem>
 
   double lastPlayerSpeed = 1.0;
   int episodeNum = 0;
+  bool _isEnteringAndroidPIPFromLifecycle = false;
+  bool? _lastPipPlaying;
+  bool? _lastPipCanSkipToNext;
+  bool? _lastPipCanSkipToPrevious;
+  bool? _lastPipDanmakuEnabled;
+  static const MethodChannel _intentChannel =
+      MethodChannel('com.predidit.kazumi/intent');
 
   late mobx.ReactionDisposer _fullscreenListener;
 
@@ -128,11 +135,116 @@ class _PlayerItemState extends State<PlayerItem>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    if (Platform.isAndroid && state == AppLifecycleState.inactive) {
+      unawaited(_tryAutoEnterAndroidPIP());
+    }
     try {
       if (playerController.playerPlaying) {
         playerController.danmakuController.resume();
       }
     } catch (_) {}
+  }
+
+  Future<void> _tryAutoEnterAndroidPIP() async {
+    if (!mounted || _isEnteringAndroidPIPFromLifecycle) {
+      return;
+    }
+    final bool autoEnterPIP = setting.get(
+      SettingBoxKey.androidAutoEnterPIP,
+      defaultValue: false,
+    );
+    if (!autoEnterPIP ||
+        !playerController.playing ||
+        playerController.loading) {
+      return;
+    }
+
+    _isEnteringAndroidPIPFromLifecycle = true;
+    try {
+      final bool supported = await Utils.isAndroidPIPSupported();
+      if (!supported) {
+        return;
+      }
+      await _updateAndroidPIPActions(force: true);
+      await Utils.enterAndroidPIPWindow();
+    } catch (e) {
+      KazumiLogger().w(
+        'PlayerItem: failed to auto enter android pip',
+        error: e,
+      );
+    } finally {
+      _isEnteringAndroidPIPFromLifecycle = false;
+    }
+  }
+
+  Future<dynamic> _handleIntentChannelCall(MethodCall call) async {
+    if (!Platform.isAndroid || call.method != 'onPipAction') {
+      return;
+    }
+    final dynamic args = call.arguments;
+    final String? action = (args is Map) ? args['action'] as String? : null;
+    if (action == null || !mounted) {
+      return;
+    }
+
+    switch (action) {
+      case 'play_pause':
+        playerController.playOrPause();
+        break;
+      case 'toggle_danmaku':
+        handleDanmaku();
+        break;
+      case 'next':
+        await handlePreNextEpisode('next');
+        break;
+      case 'previous':
+        await handlePreNextEpisode('prev');
+        break;
+      default:
+        return;
+    }
+    await _updateAndroidPIPActions(force: true);
+  }
+
+  Future<void> _updateAndroidPIPActions({bool force = false}) async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+    bool canSkipToPrevious = false;
+    bool canSkipToNext = false;
+
+    final int currentEpisode = videoPageController.currentEpisode;
+    final int currentRoad = videoPageController.currentRoad;
+    if (videoPageController.roadList.isNotEmpty &&
+        currentRoad >= 0 &&
+        currentRoad < videoPageController.roadList.length &&
+        currentEpisode > 0) {
+      final int totalEpisodes =
+          videoPageController.roadList[currentRoad].data.length;
+      canSkipToPrevious = currentEpisode > 1;
+      canSkipToNext = currentEpisode < totalEpisodes;
+    }
+
+    final bool playing = playerController.playing;
+    final bool danmakuEnabled = playerController.danmakuOn;
+    if (!force &&
+        _lastPipPlaying == playing &&
+        _lastPipCanSkipToNext == canSkipToNext &&
+        _lastPipCanSkipToPrevious == canSkipToPrevious &&
+        _lastPipDanmakuEnabled == danmakuEnabled) {
+      return;
+    }
+
+    _lastPipPlaying = playing;
+    _lastPipCanSkipToNext = canSkipToNext;
+    _lastPipCanSkipToPrevious = canSkipToPrevious;
+    _lastPipDanmakuEnabled = danmakuEnabled;
+    await Utils.updateAndroidPIPActions(
+      playing: playing,
+      canSkipToNext: canSkipToNext,
+      canSkipToPrevious: canSkipToPrevious,
+      danmakuEnabled: danmakuEnabled,
+    );
   }
 
   void _loadShortcuts() {
@@ -369,11 +481,13 @@ class _PlayerItemState extends State<PlayerItem>
         playerController.danmakuOn = false;
       });
       setting.put(SettingBoxKey.danmakuEnabledByDefault, false);
+      unawaited(_updateAndroidPIPActions(force: true));
       return;
     }
     // if false and empty, show dialog.
     if (playerController.danDanmakus.isEmpty) {
       showDanmakuSwitch();
+      unawaited(_updateAndroidPIPActions(force: true));
       return;
     }
     // turn on danmaku.
@@ -381,6 +495,7 @@ class _PlayerItemState extends State<PlayerItem>
       playerController.danmakuOn = true;
     });
     setting.put(SettingBoxKey.danmakuEnabledByDefault, true);
+    unawaited(_updateAndroidPIPActions(force: true));
   }
 
   Future<void> _uploadHistoryToWebDav() async {
@@ -657,6 +772,7 @@ class _PlayerItemState extends State<PlayerItem>
       playerController.buffer = playerController.playerBuffer;
       playerController.duration = playerController.playerDuration;
       playerController.completed = playerController.playerCompleted;
+      unawaited(_updateAndroidPIPActions());
       // 弹幕相关
       if (playerController.currentPosition.inMicroseconds != 0 &&
           playerController.playerPlaying == true &&
@@ -723,7 +839,9 @@ class _PlayerItemState extends State<PlayerItem>
         });
       }
       // 历史记录相关
-      if (playerController.playerPlaying && !videoPageController.loading && !videoPageController.isOfflineMode) {
+      if (playerController.playerPlaying &&
+          !videoPageController.loading &&
+          !videoPageController.isOfflineMode) {
         if (!WebDav().isHistorySyncing) {
           final pluginName = videoPageController.isOfflineMode
               ? videoPageController.offlinePluginName
@@ -1311,6 +1429,10 @@ class _PlayerItemState extends State<PlayerItem>
       FlutterVolumeController.setIOSAudioSessionCategory(
           category: AudioSessionCategory.playback);
     }
+    if (Platform.isAndroid) {
+      _intentChannel.setMethodCallHandler(_handleIntentChannelCall);
+      unawaited(_updateAndroidPIPActions(force: true));
+    }
     WidgetsBinding.instance.addObserver(this);
     animationController ??= AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -1347,7 +1469,7 @@ class _PlayerItemState extends State<PlayerItem>
         setting.get(SettingBoxKey.danmakuFontWeight, defaultValue: 4);
     _danmakuUseSystemFont =
         setting.get(SettingBoxKey.useSystemFont, defaultValue: false);
-    _danmakuBorderSize = 
+    _danmakuBorderSize =
         setting.get(SettingBoxKey.danmakuBorderSize, defaultValue: 1.5);
     haEnable = setting.get(SettingBoxKey.hAenable, defaultValue: true);
     autoPlayNext = setting.get(SettingBoxKey.autoPlayNext, defaultValue: true);
@@ -1371,6 +1493,9 @@ class _PlayerItemState extends State<PlayerItem>
     animationController?.dispose();
     animationController = null;
     _disposePlayerMenu();
+    if (Platform.isAndroid) {
+      _intentChannel.setMethodCallHandler(null);
+    }
     // Reset player panel state
     playerController.lockPanel = false;
     playerController.showVideoController = true;
