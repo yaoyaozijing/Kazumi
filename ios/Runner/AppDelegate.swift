@@ -16,12 +16,24 @@ import CoreMedia
     private var pipHostView: UIView?
     private var pipPossibleObserver: NSKeyValueObservation?
     private var pipStartTimeoutWorkItem: DispatchWorkItem?
+    private var shouldStopPipOnNextForeground = false
 
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    }
+
+    override func applicationDidBecomeActive(_ application: UIApplication) {
+        super.applicationDidBecomeActive(application)
+        guard shouldStopPipOnNextForeground else {
+            return
+        }
+        guard let controller = pipController, controller.isPictureInPictureActive else {
+            return
+        }
+        controller.stopPictureInPicture()
     }
 
     func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
@@ -207,11 +219,11 @@ import CoreMedia
         guard let host = resolveRootViewController()?.view else {
             return false
         }
-        let hostView = UIView(frame: CGRect(x: 1, y: 1, width: 2, height: 2))
+        let hostView = UIView(frame: host.bounds)
+        hostView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         hostView.isUserInteractionEnabled = false
         hostView.clipsToBounds = true
         hostView.backgroundColor = .clear
-        hostView.alpha = 0.01
         host.addSubview(hostView)
 
         let playerLayer = AVPlayerLayer(player: player)
@@ -235,7 +247,10 @@ import CoreMedia
         pipController = controller
         pipHostView = hostView
 
-        return startPictureInPictureIfPossible()
+        DispatchQueue.main.async { [weak self] in
+            _ = self?.startPictureInPictureIfPossible()
+        }
+        return true
     }
 
     private func resolveRootViewController() -> UIViewController? {
@@ -312,6 +327,7 @@ import CoreMedia
     }
 
     private func cleanupPictureInPictureResources() {
+        shouldStopPipOnNextForeground = false
         pipStartTimeoutWorkItem?.cancel()
         pipStartTimeoutWorkItem = nil
         pipPossibleObserver = nil
@@ -336,7 +352,26 @@ import CoreMedia
         _ pictureInPictureController: AVPictureInPictureController
     ) {
         pipPossibleObserver = nil
+        shouldStopPipOnNextForeground = true
         notifyFlutterPIPStarted()
+        minimizeApplicationForPictureInPicture()
+    }
+
+    private func minimizeApplicationForPictureInPicture() {
+        let suspendSelector = NSSelectorFromString("suspend")
+        guard UIApplication.shared.responds(to: suspendSelector) else {
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            UIApplication.shared.perform(suspendSelector)
+        }
+    }
+
+    func pictureInPictureController(
+        _ pictureInPictureController: AVPictureInPictureController,
+        restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void
+    ) {
+        completionHandler(true)
     }
 
     func pictureInPictureController(
