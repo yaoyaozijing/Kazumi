@@ -17,6 +17,7 @@ import CoreMedia
     private var pipPossibleObserver: NSKeyValueObservation?
     private var pipStartTimeoutWorkItem: DispatchWorkItem?
     private var shouldStopPipOnNextForeground = false
+    private var pipShouldPauseAfterStart = false
 
     override func application(
         _ application: UIApplication,
@@ -34,6 +35,28 @@ import CoreMedia
             return
         }
         controller.stopPictureInPicture()
+    }
+
+    override func applicationWillResignActive(_ application: UIApplication) {
+        super.applicationWillResignActive(application)
+        guard let controller = pipController else {
+            return
+        }
+        guard !controller.isPictureInPictureActive else {
+            return
+        }
+        _ = startPictureInPictureIfPossible()
+    }
+
+    override func applicationDidEnterBackground(_ application: UIApplication) {
+        super.applicationDidEnterBackground(application)
+        guard let controller = pipController else {
+            return
+        }
+        guard !controller.isPictureInPictureActive else {
+            return
+        }
+        _ = startPictureInPictureIfPossible()
     }
 
     func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
@@ -210,11 +233,11 @@ import CoreMedia
         let player = AVPlayer(playerItem: item)
         if positionMilliseconds > 0 {
             let time = CMTime(value: CMTimeValue(positionMilliseconds), timescale: 1000)
-            player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+            player.seek(to: time)
         }
-        if playing {
-            player.play()
-        }
+        // Keep PiP eligible even when original player state is paused.
+        pipShouldPauseAfterStart = !playing
+        player.playImmediately(atRate: 1.0)
 
         guard let host = resolveRootViewController()?.view else {
             return false
@@ -328,6 +351,7 @@ import CoreMedia
 
     private func cleanupPictureInPictureResources() {
         shouldStopPipOnNextForeground = false
+        pipShouldPauseAfterStart = false
         pipStartTimeoutWorkItem?.cancel()
         pipStartTimeoutWorkItem = nil
         pipPossibleObserver = nil
@@ -353,6 +377,10 @@ import CoreMedia
     ) {
         pipPossibleObserver = nil
         shouldStopPipOnNextForeground = true
+        if pipShouldPauseAfterStart {
+            pipPlayer?.pause()
+            pipShouldPauseAfterStart = false
+        }
         notifyFlutterPIPStarted()
     }
 

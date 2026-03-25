@@ -140,7 +140,10 @@ class _PlayerItemState extends State<PlayerItem>
     if (Platform.isAndroid && state == AppLifecycleState.inactive) {
       unawaited(_tryAutoEnterAndroidPIP());
     }
-    if (Platform.isIOS && state == AppLifecycleState.inactive) {
+    if (Platform.isIOS &&
+        (state == AppLifecycleState.inactive ||
+            state == AppLifecycleState.hidden ||
+            state == AppLifecycleState.paused)) {
       unawaited(_tryAutoEnterIOSPIP());
     }
     try {
@@ -194,7 +197,6 @@ class _PlayerItemState extends State<PlayerItem>
       return;
     }
     if (playerController.loading ||
-        !playerController.playing ||
         playerController.videoUrl.isEmpty) {
       return;
     }
