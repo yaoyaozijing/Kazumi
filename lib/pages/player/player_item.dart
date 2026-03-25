@@ -178,6 +178,28 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   Future<dynamic> _handleIntentChannelCall(MethodCall call) async {
+    if (Platform.isIOS && call.method == 'onIosPipStarted') {
+      if (!mounted || playerController.loading) {
+        return;
+      }
+      if (playerController.playing) {
+        await playerController.pause();
+      }
+      return;
+    }
+    if (Platform.isIOS && call.method == 'onIosPipStartFailed') {
+      final dynamic args = call.arguments;
+      final String error = args is Map ? args['error'] as String? ?? '' : '';
+      if (error.isNotEmpty) {
+        KazumiLogger().e('Failed to start iOS PIP: $error');
+      }
+      if (mounted) {
+        KazumiDialog.showToast(
+          message: error.isEmpty ? '进入画中画失败' : '进入画中画失败: $error',
+        );
+      }
+      return;
+    }
     if (Platform.isIOS && call.method == 'onIosPipStopped') {
       final dynamic args = call.arguments;
       final num? positionNum = args is Map ? args['position'] as num? : null;

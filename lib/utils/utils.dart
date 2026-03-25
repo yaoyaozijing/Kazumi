@@ -608,6 +608,7 @@ class Utils {
     required String referer,
     required int position,
     required bool playing,
+    Map<String, String>? headers,
   }) async {
     if (!Platform.isIOS) {
       return false;
@@ -620,6 +621,7 @@ class Utils {
         'referer': referer,
         'position': position,
         'playing': playing,
+        if (headers != null) 'headers': headers,
       });
       return entered ?? false;
     } on PlatformException catch (e) {

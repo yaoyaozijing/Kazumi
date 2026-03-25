@@ -1170,13 +1170,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           position:
                               playerController.currentPosition.inMilliseconds,
                           playing: playerController.playing,
+                          headers: playerController.httpHeaders,
                         );
                         if (!entered) {
                           KazumiDialog.showToast(message: '进入画中画失败');
                           return;
-                        }
-                        if (playerController.playing) {
-                          await playerController.pause();
                         }
                       },
                       tooltip: '画中画',

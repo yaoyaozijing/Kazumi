@@ -145,6 +145,7 @@ abstract class _PlayerController with Store {
 
   // 视频地址
   String videoUrl = '';
+  Map<String, String> httpHeaders = {};
 
   // DanDanPlay 弹幕ID
   int bangumiID = 0;
@@ -226,6 +227,7 @@ abstract class _PlayerController with Store {
 
   Future<void> init(PlaybackInitParams params) async {
     videoUrl = params.videoUrl;
+    httpHeaders = Map<String, String>.from(params.httpHeaders);
     isLocalPlayback = params.isLocalPlayback;
     bangumiId = params.bangumiId;
     currentEpisode = params.episode;

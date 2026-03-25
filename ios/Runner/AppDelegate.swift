@@ -14,6 +14,8 @@ import CoreMedia
     private var pipPlayerLayer: AVPlayerLayer?
     private var pipController: AVPictureInPictureController?
     private var pipHostView: UIView?
+    private var pipPossibleObserver: NSKeyValueObservation?
+    private var pipStartTimeoutWorkItem: DispatchWorkItem?
 
     override func application(
         _ application: UIApplication,
@@ -52,9 +54,19 @@ import CoreMedia
                 let referer = args["referer"] as? String ?? ""
                 let position = args["position"] as? Int ?? 0
                 let playing = args["playing"] as? Bool ?? true
+                let rawHeaders = args["headers"] as? [String: Any] ?? [:]
+                var headers: [String: String] = [:]
+                for (key, value) in rawHeaders {
+                    if let stringValue = value as? String {
+                        headers[key] = stringValue
+                    } else {
+                        headers[key] = "\(value)"
+                    }
+                }
                 let entered = self?.enterPictureInPictureMode(
                     url: url,
                     referer: referer,
+                    headers: headers,
                     positionMilliseconds: position,
                     playing: playing
                 ) ?? false
@@ -136,6 +148,7 @@ import CoreMedia
     private func enterPictureInPictureMode(
         url: String,
         referer: String,
+        headers: [String: String],
         positionMilliseconds: Int,
         playing: Bool
     ) -> Bool {
@@ -159,11 +172,26 @@ import CoreMedia
             NSLog("AppDelegate: failed to configure AVAudioSession for PIP: \(error)")
         }
 
+        var requestHeaders: [String: String] = [:]
+        for (key, value) in headers {
+            switch key.lowercased() {
+            case "referer":
+                requestHeaders["Referer"] = value
+            case "user-agent":
+                requestHeaders["User-Agent"] = value
+            default:
+                requestHeaders[key] = value
+            }
+        }
+        if !referer.isEmpty && requestHeaders["Referer"] == nil {
+            requestHeaders["Referer"] = referer
+        }
+
         let options: [String: Any]
-        if referer.isEmpty {
+        if requestHeaders.isEmpty {
             options = [:]
         } else {
-            options = ["AVURLAssetHTTPHeaderFieldsKey": ["Referer": referer]]
+            options = ["AVURLAssetHTTPHeaderFieldsKey": requestHeaders]
         }
         let asset = AVURLAsset(url: videoURL, options: options.isEmpty ? nil : options)
         let item = AVPlayerItem(asset: asset)
@@ -179,10 +207,11 @@ import CoreMedia
         guard let host = resolveRootViewController()?.view else {
             return false
         }
-        let hostView = UIView(frame: CGRect(x: -2, y: -2, width: 1, height: 1))
+        let hostView = UIView(frame: CGRect(x: 1, y: 1, width: 2, height: 2))
         hostView.isUserInteractionEnabled = false
         hostView.clipsToBounds = true
         hostView.backgroundColor = .clear
+        hostView.alpha = 0.01
         host.addSubview(hostView)
 
         let playerLayer = AVPlayerLayer(player: player)
@@ -206,8 +235,7 @@ import CoreMedia
         pipController = controller
         pipHostView = hostView
 
-        controller.startPictureInPicture()
-        return true
+        return startPictureInPictureIfPossible()
     }
 
     private func resolveRootViewController() -> UIViewController? {
@@ -215,6 +243,62 @@ import CoreMedia
             return nil
         }
         return windowScene.windows.first?.rootViewController
+    }
+
+    private func startPictureInPictureIfPossible() -> Bool {
+        guard let controller = pipController else {
+            return false
+        }
+        pipStartTimeoutWorkItem?.cancel()
+        pipStartTimeoutWorkItem = nil
+        if controller.isPictureInPicturePossible {
+            controller.startPictureInPicture()
+            return true
+        }
+
+        pipPossibleObserver = controller.observe(
+            \.isPictureInPicturePossible,
+            options: [.new]
+        ) { [weak self] observedController, _ in
+            guard let self = self else {
+                return
+            }
+            if observedController.isPictureInPicturePossible {
+                self.pipPossibleObserver = nil
+                self.pipStartTimeoutWorkItem?.cancel()
+                self.pipStartTimeoutWorkItem = nil
+                observedController.startPictureInPicture()
+            }
+        }
+
+        let timeoutWorkItem = DispatchWorkItem { [weak self] in
+            guard let self = self else {
+                return
+            }
+            guard self.pipPossibleObserver != nil else {
+                return
+            }
+            let error = NSError(
+                domain: "com.predidit.kazumi.pip",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Picture in Picture is not available for current playback."]
+            )
+            self.notifyFlutterPIPStartFailed(error: error)
+            self.cleanupPictureInPictureResources()
+        }
+        pipStartTimeoutWorkItem = timeoutWorkItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10.0, execute: timeoutWorkItem)
+        return true
+    }
+
+    private func notifyFlutterPIPStarted() {
+        intentChannel?.invokeMethod("onIosPipStarted", arguments: nil)
+    }
+
+    private func notifyFlutterPIPStartFailed(error: Error) {
+        intentChannel?.invokeMethod("onIosPipStartFailed", arguments: [
+            "error": error.localizedDescription
+        ])
     }
 
     private func notifyFlutterPIPStopped() {
@@ -228,6 +312,9 @@ import CoreMedia
     }
 
     private func cleanupPictureInPictureResources() {
+        pipStartTimeoutWorkItem?.cancel()
+        pipStartTimeoutWorkItem = nil
+        pipPossibleObserver = nil
         pipController?.delegate = nil
         pipController = nil
         pipPlayer?.pause()
@@ -245,11 +332,19 @@ import CoreMedia
         cleanupPictureInPictureResources()
     }
 
+    func pictureInPictureControllerDidStartPictureInPicture(
+        _ pictureInPictureController: AVPictureInPictureController
+    ) {
+        pipPossibleObserver = nil
+        notifyFlutterPIPStarted()
+    }
+
     func pictureInPictureController(
         _ pictureInPictureController: AVPictureInPictureController,
         failedToStartPictureInPictureWithError error: Error
     ) {
         NSLog("AppDelegate: failed to start PIP: \(error)")
+        notifyFlutterPIPStartFailed(error: error)
         cleanupPictureInPictureResources()
     }
 }
