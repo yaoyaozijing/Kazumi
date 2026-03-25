@@ -59,6 +59,12 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   }
 
   void setTheme(Color? color) {
+    final pageTransitionsTheme = resolvePageTransitionsTheme2024(
+      enablePredictiveBackGesture: setting.get(
+        SettingBoxKey.enablePredictiveBackGesture,
+        defaultValue: true,
+      ),
+    );
     var defaultDarkTheme = ThemeData(
         useMaterial3: true,
         fontFamily: themeProvider.currentFontFamily,
@@ -66,7 +72,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
         colorSchemeSeed: color,
         progressIndicatorTheme: progressIndicatorTheme2024,
         sliderTheme: sliderTheme2024,
-        pageTransitionsTheme: pageTransitionsTheme2024);
+        pageTransitionsTheme: pageTransitionsTheme);
     var oledDarkTheme = Utils.oledDarkTheme(defaultDarkTheme);
     themeProvider.setTheme(
       ThemeData(
@@ -76,7 +82,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
           colorSchemeSeed: color,
           progressIndicatorTheme: progressIndicatorTheme2024,
           sliderTheme: sliderTheme2024,
-          pageTransitionsTheme: pageTransitionsTheme2024),
+          pageTransitionsTheme: pageTransitionsTheme),
       oledEnhance ? oledDarkTheme : defaultDarkTheme,
     );
     defaultThemeColor = color?.value.toRadixString(16) ?? 'default';
@@ -84,6 +90,12 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   }
 
   void resetTheme() {
+    final pageTransitionsTheme = resolvePageTransitionsTheme2024(
+      enablePredictiveBackGesture: setting.get(
+        SettingBoxKey.enablePredictiveBackGesture,
+        defaultValue: true,
+      ),
+    );
     var defaultDarkTheme = ThemeData(
         useMaterial3: true,
         fontFamily: themeProvider.currentFontFamily,
@@ -91,7 +103,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
         colorSchemeSeed: Colors.green,
         progressIndicatorTheme: progressIndicatorTheme2024,
         sliderTheme: sliderTheme2024,
-        pageTransitionsTheme: pageTransitionsTheme2024);
+        pageTransitionsTheme: pageTransitionsTheme);
     var oledDarkTheme = Utils.oledDarkTheme(defaultDarkTheme);
     themeProvider.setTheme(
       ThemeData(
@@ -101,7 +113,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
           colorSchemeSeed: Colors.green,
           progressIndicatorTheme: progressIndicatorTheme2024,
           sliderTheme: sliderTheme2024,
-          pageTransitionsTheme: pageTransitionsTheme2024),
+          pageTransitionsTheme: pageTransitionsTheme),
       oledEnhance ? oledDarkTheme : defaultDarkTheme,
     );
     defaultThemeColor = 'default';

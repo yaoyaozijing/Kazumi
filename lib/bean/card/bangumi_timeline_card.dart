@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
+import 'package:kazumi/utils/storage.dart';
 import 'package:kazumi/utils/utils.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 
@@ -52,7 +53,8 @@ class BangumiTimelineCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              buildImage(context, bangumiItem.images['large'] ?? '', imageWidth, cardHeight),
+              buildImage(context, bangumiItem.images['large'] ?? '', imageWidth,
+                  cardHeight),
               Expanded(
                 child: Padding(
                   padding:
@@ -67,7 +69,12 @@ class BangumiTimelineCard extends StatelessWidget {
     );
   }
 
-  Widget buildImage(BuildContext context, String imageUrl, double width, double height) {
+  Widget buildImage(
+      BuildContext context, String imageUrl, double width, double height) {
+    final bool enablePredictiveBackGesture = GStorage.setting.get(
+      SettingBoxKey.enablePredictiveBackGesture,
+      defaultValue: true,
+    );
     final borderRadius = BorderRadius.circular(16);
     Widget img = NetworkImgLayer(
       src: imageUrl,
@@ -77,7 +84,9 @@ class BangumiTimelineCard extends StatelessWidget {
     if (enableHero) {
       img = Hero(
         tag: bangumiItem.id,
-        transitionOnUserGestures: true,
+        transitionOnUserGestures:
+            Theme.of(context).platform != TargetPlatform.android ||
+                !enablePredictiveBackGesture,
         child: ClipRRect(
           borderRadius: borderRadius,
           child: img,
@@ -122,7 +131,8 @@ class BangumiTimelineCard extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 2),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withAlpha((255 * 0.10).round()),
+                color: colorScheme.primaryContainer
+                    .withAlpha((255 * 0.10).round()),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Padding(
@@ -166,16 +176,14 @@ class BangumiTimelineCard extends StatelessWidget {
                     Icon(Icons.leaderboard,
                         size: 15, color: colorScheme.tertiary),
                     const SizedBox(width: 2),
-                    Text(
-                        showRating ? 'Rank ${bangumiItem.rank}' : 'Rank ***',
+                    Text(showRating ? 'Rank ${bangumiItem.rank}' : 'Rank ***',
                         style: infoStyle),
                   ],
                 ),
               ),
             const Spacer(),
             if (showRating ? bangumiItem.votes > 0 : true)
-              Text(
-                  showRating ? '评分人数: ${bangumiItem.votes}' : '评分人数: ***',
+              Text(showRating ? '评分人数: ${bangumiItem.votes}' : '评分人数: ***',
                   style: subStyle),
           ],
         ),

@@ -63,7 +63,8 @@ class _PopularPageState extends State<PopularPage>
     if (scrollController.position.pixels >=
             scrollController.position.maxScrollExtent - 200 &&
         !popularController.isLoadingMore) {
-      KazumiLogger().i('PopularPageController: Fetching next recommendation batch');
+      KazumiLogger()
+          .i('PopularPageController: Fetching next recommendation batch');
       if (popularController.currentTag != '') {
         popularController.queryBangumiByTag();
       } else {
@@ -95,6 +96,69 @@ class _PopularPageState extends State<PopularPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final bool enablePredictiveBackGesture = GStorage.setting.get(
+      SettingBoxKey.enablePredictiveBackGesture,
+      defaultValue: true,
+    );
+    final scaffold = Scaffold(
+      body: CustomScrollView(
+        controller: scrollController,
+        slivers: [
+          buildSliverAppBar(),
+          SliverToBoxAdapter(
+            child: Observer(
+              builder: (_) => AnimatedOpacity(
+                opacity: popularController.isLoadingMore ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: popularController.isLoadingMore
+                    ? const LinearProgressIndicator(minHeight: 4)
+                    : const SizedBox(height: 4),
+              ),
+            ),
+          ),
+          SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                  StyleString.cardSpace, 0, StyleString.cardSpace, 0),
+              sliver: Observer(builder: (_) {
+                if (popularController.isTimeOut) {
+                  return SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 400,
+                      child: GeneralErrorWidget(
+                        errMsg: '什么都没有找到 (´;ω;`)',
+                        actions: [
+                          GeneralErrorButton(
+                            onPressed: () {
+                              if (popularController.trendList.isEmpty) {
+                                popularController.queryBangumiByTrend();
+                              } else {
+                                popularController.queryBangumiByTag();
+                              }
+                            },
+                            text: '点击重试',
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                return contentGrid(
+                  (popularController.currentTag == '')
+                      ? popularController.trendList
+                      : popularController.bangumiList,
+                );
+              })),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => scrollController.animateTo(0,
+            duration: const Duration(milliseconds: 350), curve: Curves.easeOut),
+        child: const Icon(Icons.arrow_upward),
+      ),
+    );
+    if (enablePredictiveBackGesture) {
+      return scaffold;
+    }
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
@@ -103,63 +167,7 @@ class _PopularPageState extends State<PopularPage>
         }
         onBackPressed(context);
       },
-      child: Scaffold(
-        body: CustomScrollView(
-          controller: scrollController,
-          slivers: [
-            buildSliverAppBar(),
-            SliverToBoxAdapter(
-              child: Observer(
-                builder: (_) => AnimatedOpacity(
-                  opacity: popularController.isLoadingMore ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: popularController.isLoadingMore
-                      ? const LinearProgressIndicator(minHeight: 4)
-                      : const SizedBox(height: 4),
-                ),
-              ),
-            ),
-            SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                    StyleString.cardSpace, 0, StyleString.cardSpace, 0),
-                sliver: Observer(builder: (_) {
-                  if (popularController.isTimeOut) {
-                    return SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 400,
-                        child: GeneralErrorWidget(
-                          errMsg: '什么都没有找到 (´;ω;`)',
-                          actions: [
-                            GeneralErrorButton(
-                              onPressed: () {
-                                if (popularController.trendList.isEmpty) {
-                                  popularController.queryBangumiByTrend();
-                                } else {
-                                  popularController.queryBangumiByTag();
-                                }
-                              },
-                              text: '点击重试',
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                  return contentGrid(
-                    (popularController.currentTag == '')
-                        ? popularController.trendList
-                        : popularController.bangumiList,
-                  );
-                })),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => scrollController.animateTo(0,
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOut),
-          child: const Icon(Icons.arrow_upward),
-        ),
-      ),
+      child: scaffold,
     );
   }
 

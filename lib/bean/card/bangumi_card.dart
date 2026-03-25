@@ -3,6 +3,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
+import 'package:kazumi/utils/storage.dart';
 import 'package:kazumi/utils/utils.dart';
 
 // 视频卡片 - 垂直布局
@@ -20,6 +21,10 @@ class BangumiCardV extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool enablePredictiveBackGesture = GStorage.setting.get(
+      SettingBoxKey.enablePredictiveBackGesture,
+      defaultValue: true,
+    );
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -45,7 +50,10 @@ class BangumiCardV extends StatelessWidget {
                   final double maxHeight = boxConstraints.maxHeight;
                   return enableHero
                       ? Hero(
-                          transitionOnUserGestures: true,
+                          transitionOnUserGestures:
+                              Theme.of(context).platform !=
+                                      TargetPlatform.android ||
+                                  !enablePredictiveBackGesture,
                           tag: bangumiItem.id,
                           child: NetworkImgLayer(
                             src: bangumiItem.images['large'] ?? '',
@@ -78,8 +86,12 @@ class BangumiContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final ts = MediaQuery.textScalerOf(context);
 
-    final int maxTextLines = Utils.isDesktop() ? 3 
-      : (Utils.isTablet() && MediaQuery.of(context).orientation == Orientation.landscape) ? 3 : 2;
+    final int maxTextLines = Utils.isDesktop()
+        ? 3
+        : (Utils.isTablet() &&
+                MediaQuery.of(context).orientation == Orientation.landscape)
+            ? 3
+            : 2;
 
     return Expanded(
       child: Padding(

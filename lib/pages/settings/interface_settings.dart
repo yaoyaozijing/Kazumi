@@ -4,7 +4,9 @@ import 'package:card_settings_ui/tile/settings_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
+import 'package:kazumi/bean/settings/theme_provider.dart';
 import 'package:kazumi/utils/storage.dart';
+import 'package:provider/provider.dart';
 
 class InterfaceSettingsPage extends StatefulWidget {
   const InterfaceSettingsPage({super.key});
@@ -16,6 +18,7 @@ class InterfaceSettingsPage extends StatefulWidget {
 class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
   Box setting = GStorage.setting;
   late bool showRating;
+  late bool enablePredictiveBackGesture;
   late String defaultPage;
   final MenuController defaultPageMenuController = MenuController();
 
@@ -30,6 +33,10 @@ class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
   void initState() {
     super.initState();
     showRating = setting.get(SettingBoxKey.showRating, defaultValue: true);
+    enablePredictiveBackGesture = setting.get(
+      SettingBoxKey.enablePredictiveBackGesture,
+      defaultValue: true,
+    );
     defaultPage = setting.get(SettingBoxKey.defaultStartupPage,
         defaultValue: '/tab/popular/');
   }
@@ -44,6 +51,8 @@ class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
+    final ThemeProvider themeProvider =
+        Provider.of<ThemeProvider>(context, listen: false);
 
     return Scaffold(
       appBar: SysAppBar(
@@ -99,6 +108,25 @@ class _InterfaceSettingsPageState extends State<InterfaceSettingsPage> {
             ),
           ]),
           SettingsSection(tiles: [
+            SettingsTile.switchTile(
+              onToggle: (value) async {
+                enablePredictiveBackGesture =
+                    value ?? !enablePredictiveBackGesture;
+                await setting.put(
+                  SettingBoxKey.enablePredictiveBackGesture,
+                  enablePredictiveBackGesture,
+                );
+                // Trigger app-level theme rebuild so page transition changes apply immediately.
+                themeProvider.setThemeMode(themeProvider.themeMode);
+                setState(() {});
+              },
+              title: Text('预测性返回手势', style: TextStyle(fontFamily: fontFamily)),
+              description: Text(
+                '关闭后将恢复旧版返回行为',
+                style: TextStyle(fontFamily: fontFamily),
+              ),
+              initialValue: enablePredictiveBackGesture,
+            ),
             SettingsTile.switchTile(
               onToggle: (value) async {
                 showRating = value ?? !showRating;

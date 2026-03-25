@@ -28,7 +28,8 @@ const SliderThemeData sliderTheme2024 = SliderThemeData(
 /// The page transition method defined here is managed by flutter, and the native transition method of flutter is set here.
 /// Transition method here will be overridden by the transition method of modular, and do not set the transition method in modular to prevent
 /// the native transition method from failing
-const PageTransitionsTheme pageTransitionsTheme2024 = PageTransitionsTheme(
+const PageTransitionsTheme pageTransitionsThemeLegacy2024 =
+    PageTransitionsTheme(
   builders: {
     TargetPlatform.android: CupertinoPageTransitionsBuilder(),
     TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
@@ -37,6 +38,25 @@ const PageTransitionsTheme pageTransitionsTheme2024 = PageTransitionsTheme(
     TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
   },
 );
+
+const PageTransitionsTheme pageTransitionsThemePredictive2024 =
+    PageTransitionsTheme(
+  builders: {
+    TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+    TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+    TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+    TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+  },
+);
+
+PageTransitionsTheme resolvePageTransitionsTheme2024({
+  required bool enablePredictiveBackGesture,
+}) {
+  return enablePredictiveBackGesture
+      ? pageTransitionsThemePredictive2024
+      : pageTransitionsThemeLegacy2024;
+}
 
 /// Layout breakpoint according to google:
 /// https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes.
@@ -214,58 +234,58 @@ final List<String> defaultAnimeTags = const [
 ];
 
 // 播放器默认快捷键
-  final Map<String, List<String>> defaultShortcuts = const {
-    'playorpause': [' '],
-    'forward': ['Arrow Right'],
-    'rewind': ['Arrow Left'],
-    'next': ['N'],
-    'prev': ['P'],
-    'volumeup': ['Arrow Up'],
-    'volumedown': ['Arrow Down'],
-    'togglemute': ['M'],
-    'fullscreen': ['F'],
-    'exitfullscreen': ['Escape'],
-    'toggledanmaku': ['D'],
-    'screenshot': ['S'],
-    'skip': ['K'],
-    'speed1': ['1'],
-    'speed2': ['2'],
-    'speed3': ['3'],
-    'speedup': ['X'],
-    'speeddown': ['Z'],
-  };
+final Map<String, List<String>> defaultShortcuts = const {
+  'playorpause': [' '],
+  'forward': ['Arrow Right'],
+  'rewind': ['Arrow Left'],
+  'next': ['N'],
+  'prev': ['P'],
+  'volumeup': ['Arrow Up'],
+  'volumedown': ['Arrow Down'],
+  'togglemute': ['M'],
+  'fullscreen': ['F'],
+  'exitfullscreen': ['Escape'],
+  'toggledanmaku': ['D'],
+  'screenshot': ['S'],
+  'skip': ['K'],
+  'speed1': ['1'],
+  'speed2': ['2'],
+  'speed3': ['3'],
+  'speedup': ['X'],
+  'speeddown': ['Z'],
+};
 
 // 键位别名
-  final Map<String, String> keyAliases = {
-    ' ': '空格',
-    'Arrow Up': '↑',
-    'Arrow Down': '↓',
-    'Arrow Left': '←',
-    'Arrow Right': '→',
-    'Enter': '回车',
-    'Tab': 'Tab',
-    'Escape': 'Esc',
-    'Backspace': '退格',
-  };
+final Map<String, String> keyAliases = {
+  ' ': '空格',
+  'Arrow Up': '↑',
+  'Arrow Down': '↓',
+  'Arrow Left': '←',
+  'Arrow Right': '→',
+  'Enter': '回车',
+  'Tab': 'Tab',
+  'Escape': 'Esc',
+  'Backspace': '退格',
+};
 
 //功能中文名对应
-  final Map<String, String> shortcutsChineseName = {
-    'playorpause': '播放 / 暂停',
-    'forward': '快进 / 长按倍速',
-    'rewind': '快退',
-    'next': '下一集',
-    'prev': '上一集',
-    'volumeup': '音量加',
-    'volumedown': '音量减',
-    'togglemute': '静音',
-    'fullscreen': '全屏',
-    'exitfullscreen': '退出全屏',
-    'toggledanmaku': '弹幕开关',
-    'screenshot': '截图',
-    'skip': '跳过',
-    'speed1': '倍速：1x',
-    'speed2': '倍速：2x',
-    'speed3': '倍速：3x',
-    'speedup': '倍速加',
-    'speeddown': '倍速减',
-  };
+final Map<String, String> shortcutsChineseName = {
+  'playorpause': '播放 / 暂停',
+  'forward': '快进 / 长按倍速',
+  'rewind': '快退',
+  'next': '下一集',
+  'prev': '上一集',
+  'volumeup': '音量加',
+  'volumedown': '音量减',
+  'togglemute': '静音',
+  'fullscreen': '全屏',
+  'exitfullscreen': '退出全屏',
+  'toggledanmaku': '弹幕开关',
+  'screenshot': '截图',
+  'skip': '跳过',
+  'speed1': '倍速：1x',
+  'speed2': '倍速：2x',
+  'speed3': '倍速：3x',
+  'speedup': '倍速加',
+  'speeddown': '倍速减',
+};

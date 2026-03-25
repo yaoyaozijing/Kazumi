@@ -204,6 +204,13 @@ class _AppWidgetState extends State<AppWidget>
         setting.get(SettingBoxKey.oledEnhance, defaultValue: false);
     bool useSystemFont =
         setting.get(SettingBoxKey.useSystemFont, defaultValue: false);
+    final bool enablePredictiveBackGesture = setting.get(
+      SettingBoxKey.enablePredictiveBackGesture,
+      defaultValue: true,
+    );
+    final pageTransitionsTheme = resolvePageTransitionsTheme2024(
+      enablePredictiveBackGesture: enablePredictiveBackGesture,
+    );
     final defaultThemeMode =
         setting.get(SettingBoxKey.themeMode, defaultValue: 'system');
     if (defaultThemeMode == 'dark') {
@@ -223,7 +230,7 @@ class _AppWidgetState extends State<AppWidget>
         colorSchemeSeed: color,
         progressIndicatorTheme: progressIndicatorTheme2024,
         sliderTheme: sliderTheme2024,
-        pageTransitionsTheme: pageTransitionsTheme2024);
+        pageTransitionsTheme: pageTransitionsTheme);
     var oledDarkTheme = Utils.oledDarkTheme(defaultDarkTheme);
     themeProvider.setTheme(
       ThemeData(
@@ -233,7 +240,7 @@ class _AppWidgetState extends State<AppWidget>
           colorSchemeSeed: color,
           progressIndicatorTheme: progressIndicatorTheme2024,
           sliderTheme: sliderTheme2024,
-          pageTransitionsTheme: pageTransitionsTheme2024),
+          pageTransitionsTheme: pageTransitionsTheme),
       oledEnhance ? oledDarkTheme : defaultDarkTheme,
       notify: false,
     );
@@ -248,7 +255,7 @@ class _AppWidgetState extends State<AppWidget>
                 brightness: Brightness.light,
                 progressIndicatorTheme: progressIndicatorTheme2024,
                 sliderTheme: sliderTheme2024,
-                pageTransitionsTheme: pageTransitionsTheme2024),
+                pageTransitionsTheme: pageTransitionsTheme),
             oledEnhance
                 ? Utils.oledDarkTheme(ThemeData(
                     useMaterial3: true,
@@ -257,7 +264,7 @@ class _AppWidgetState extends State<AppWidget>
                     brightness: Brightness.dark,
                     progressIndicatorTheme: progressIndicatorTheme2024,
                     sliderTheme: sliderTheme2024,
-                    pageTransitionsTheme: pageTransitionsTheme2024))
+                    pageTransitionsTheme: pageTransitionsTheme))
                 : ThemeData(
                     useMaterial3: true,
                     fontFamily: themeProvider.currentFontFamily,
@@ -265,7 +272,7 @@ class _AppWidgetState extends State<AppWidget>
                     brightness: Brightness.dark,
                     progressIndicatorTheme: progressIndicatorTheme2024,
                     sliderTheme: sliderTheme2024,
-                    pageTransitionsTheme: pageTransitionsTheme2024),
+                    pageTransitionsTheme: pageTransitionsTheme),
             notify: false,
           );
         }

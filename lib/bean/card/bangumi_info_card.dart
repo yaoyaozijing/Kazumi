@@ -4,6 +4,7 @@ import 'package:kazumi/bean/widget/collect_button.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
+import 'package:kazumi/utils/storage.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -118,6 +119,10 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
 
   @override
   Widget build(BuildContext context) {
+    final bool enablePredictiveBackGesture = GStorage.setting.get(
+      SettingBoxKey.enablePredictiveBackGesture,
+      defaultValue: true,
+    );
     return Container(
       height: 300,
       constraints: BoxConstraints(maxWidth: 950),
@@ -144,7 +149,9 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                       final double maxWidth = boxConstraints.maxWidth;
                       final double maxHeight = boxConstraints.maxHeight;
                       return Hero(
-                        transitionOnUserGestures: true,
+                        transitionOnUserGestures: Theme.of(context).platform !=
+                                TargetPlatform.android ||
+                            !enablePredictiveBackGesture,
                         tag: widget.bangumiItem.id,
                         child: NetworkImgLayer(
                           src: widget.bangumiItem.images['large'] ?? '',
