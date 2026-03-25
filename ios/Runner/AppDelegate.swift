@@ -354,17 +354,6 @@ import CoreMedia
         pipPossibleObserver = nil
         shouldStopPipOnNextForeground = true
         notifyFlutterPIPStarted()
-        minimizeApplicationForPictureInPicture()
-    }
-
-    private func minimizeApplicationForPictureInPicture() {
-        let suspendSelector = NSSelectorFromString("suspend")
-        guard UIApplication.shared.responds(to: suspendSelector) else {
-            return
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            UIApplication.shared.perform(suspendSelector)
-        }
     }
 
     func pictureInPictureController(

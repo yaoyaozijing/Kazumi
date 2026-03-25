@@ -122,6 +122,8 @@ class _PlayerItemState extends State<PlayerItem>
   double lastPlayerSpeed = 1.0;
   int episodeNum = 0;
   bool _isEnteringAndroidPIPFromLifecycle = false;
+  bool _isEnteringIOSPIPFromLifecycle = false;
+  bool _isIOSPIPActive = false;
   bool? _lastPipPlaying;
   bool? _lastPipCanSkipToNext;
   bool? _lastPipCanSkipToPrevious;
@@ -137,6 +139,9 @@ class _PlayerItemState extends State<PlayerItem>
     super.didChangeAppLifecycleState(state);
     if (Platform.isAndroid && state == AppLifecycleState.inactive) {
       unawaited(_tryAutoEnterAndroidPIP());
+    }
+    if (Platform.isIOS && state == AppLifecycleState.inactive) {
+      unawaited(_tryAutoEnterIOSPIP());
     }
     try {
       if (playerController.playerPlaying) {
@@ -177,8 +182,52 @@ class _PlayerItemState extends State<PlayerItem>
     }
   }
 
+  Future<void> _tryAutoEnterIOSPIP() async {
+    if (!mounted || _isEnteringIOSPIPFromLifecycle || _isIOSPIPActive) {
+      return;
+    }
+    final bool autoEnterPIP = setting.get(
+      SettingBoxKey.androidAutoEnterPIP,
+      defaultValue: false,
+    );
+    if (!autoEnterPIP) {
+      return;
+    }
+    if (playerController.loading ||
+        !playerController.playing ||
+        playerController.videoUrl.isEmpty) {
+      return;
+    }
+
+    _isEnteringIOSPIPFromLifecycle = true;
+    try {
+      final bool supported = await Utils.isIOSPIPSupported();
+      if (!supported) {
+        return;
+      }
+      final bool entered = await Utils.enterIOSPIPWindow(
+        url: playerController.videoUrl,
+        referer: playerController.referer,
+        position: playerController.currentPosition.inMilliseconds,
+        playing: playerController.playing,
+        headers: playerController.httpHeaders,
+      );
+      if (!entered) {
+        KazumiLogger().w('PlayerItem: failed to auto enter ios pip');
+      }
+    } catch (e) {
+      KazumiLogger().w(
+        'PlayerItem: failed to auto enter ios pip',
+        error: e,
+      );
+    } finally {
+      _isEnteringIOSPIPFromLifecycle = false;
+    }
+  }
+
   Future<dynamic> _handleIntentChannelCall(MethodCall call) async {
     if (Platform.isIOS && call.method == 'onIosPipStarted') {
+      _isIOSPIPActive = true;
       if (!mounted || playerController.loading) {
         return;
       }
@@ -188,6 +237,7 @@ class _PlayerItemState extends State<PlayerItem>
       return;
     }
     if (Platform.isIOS && call.method == 'onIosPipStartFailed') {
+      _isIOSPIPActive = false;
       final dynamic args = call.arguments;
       final String error = args is Map ? args['error'] as String? ?? '' : '';
       if (error.isNotEmpty) {
@@ -201,6 +251,7 @@ class _PlayerItemState extends State<PlayerItem>
       return;
     }
     if (Platform.isIOS && call.method == 'onIosPipStopped') {
+      _isIOSPIPActive = false;
       final dynamic args = call.arguments;
       final num? positionNum = args is Map ? args['position'] as num? : null;
       final int position = positionNum?.toInt() ?? 0;

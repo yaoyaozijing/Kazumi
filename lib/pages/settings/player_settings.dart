@@ -269,7 +269,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   description: Text('当前视频播放完毕后自动播放下一集', style: TextStyle(fontFamily: fontFamily)),
                   initialValue: autoPlayNext,
                 ),
-                if (Platform.isAndroid)
+                if (Platform.isAndroid || Platform.isIOS)
                   SettingsTile.switchTile(
                     onToggle: (value) async {
                       androidAutoEnterPIP = value ?? !androidAutoEnterPIP;

@@ -561,7 +561,7 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
             ),
             // 跳过
             forwardIcon(),
-            if (Utils.isDesktop() || Utils.isAndroid() || Utils.isIOS())
+            if (Utils.isDesktop() || Utils.isAndroid())
               IconButton(
                   onPressed: () async {
                     if (Utils.isDesktop()) {
