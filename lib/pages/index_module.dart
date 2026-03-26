@@ -68,7 +68,10 @@ class IndexModule extends Module {
       child: (_) {
         return const IndexPage();
       },
-      children: menu.routes,
+      children: [
+        ...menu.routes,
+        ModuleRoute("/search", module: SearchModule()),
+      ],
       transition: TransitionType.fadeIn,
       duration: Duration(milliseconds: 70),
     );

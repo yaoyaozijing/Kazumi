@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:kazumi/utils/setting_tiles.dart';
 import 'package:kazumi/bean/card/color_scheme_seloctor_card.dart';
 import 'package:kazumi/utils/settings_route.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ThemeSettingsPage extends StatefulWidget {
   const ThemeSettingsPage({super.key});
@@ -33,20 +34,17 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   late bool showWindowButton;
   late bool useSystemFont;
   late bool showRating;
+  late bool autoUpdate;
+  late bool hideBuiltInCollectFolders;
+  late bool foldableOptimization;
   late String defaultPage;
+  late String defaultCollectView;
+  double _cacheSizeMB = -1;
   final PopularController popularController = Modular.get<PopularController>();
   late final ThemeProvider themeProvider;
   final MenuController menuController = MenuController();
-  final exitBehaviorTitles = <String>['退出', '进托盘', '询问'];
   late int exitBehavior =
       setting.get(SettingBoxKey.exitBehavior, defaultValue: 2);
-
-  static const Map<String, String> defaultPageMap = {
-    '/tab/popular/': '推荐',
-    '/tab/timeline/': '时间表',
-    '/tab/collect/': '追番',
-    '/tab/my/': '我的',
-  };
 
   @override
   void initState() {
@@ -63,9 +61,21 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
     useSystemFont =
         setting.get(SettingBoxKey.useSystemFont, defaultValue: false);
     showRating = setting.get(SettingBoxKey.showRating, defaultValue: true);
+    autoUpdate = setting.get(SettingBoxKey.autoUpdate, defaultValue: true);
+    hideBuiltInCollectFolders = setting.get(
+      SettingBoxKey.collectHideBuiltInFolders,
+      defaultValue: false,
+    );
+    foldableOptimization = setting.get(
+      SettingBoxKey.foldableOptimization,
+      defaultValue: false,
+    );
     defaultPage = setting.get(SettingBoxKey.defaultStartupPage,
         defaultValue: '/tab/popular/');
+    defaultCollectView =
+        setting.get(SettingBoxKey.collectDefaultView, defaultValue: 'collect');
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    _getCacheSize();
   }
 
   void onBackPressed(BuildContext context) {
@@ -96,7 +106,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
           pageTransitionsTheme: pageTransitionsTheme2024),
       oledEnhance ? oledDarkTheme : defaultDarkTheme,
     );
-    defaultThemeColor = color?.value.toRadixString(16) ?? 'default';
+    defaultThemeColor = color?.toARGB32().toRadixString(16) ?? 'default';
     setting.put(SettingBoxKey.themeColor, defaultThemeColor);
   }
 
@@ -157,6 +167,93 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
     setState(() {
       defaultPage = page;
     });
+  }
+
+  void updateDefaultCollectView(String view) {
+    setting.put(SettingBoxKey.collectDefaultView, view);
+    setState(() {
+      defaultCollectView = view;
+    });
+  }
+
+  Future<Directory> _getCacheDir() async {
+    Directory tempDir = await getTemporaryDirectory();
+    return Directory('${tempDir.path}/libCachedImageData');
+  }
+
+  Future<void> _getCacheSize() async {
+    Directory cacheDir = await _getCacheDir();
+
+    if (await cacheDir.exists()) {
+      int totalSizeBytes = await _getTotalSizeOfFilesInDir(cacheDir);
+      double totalSizeMB = (totalSizeBytes / (1024 * 1024));
+
+      if (mounted) {
+        setState(() {
+          _cacheSizeMB = totalSizeMB;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _cacheSizeMB = 0.0;
+        });
+      }
+    }
+  }
+
+  Future<int> _getTotalSizeOfFilesInDir(final Directory directory) async {
+    final List<FileSystemEntity> children = directory.listSync();
+    int total = 0;
+
+    try {
+      for (final FileSystemEntity child in children) {
+        if (child is File) {
+          final int length = await child.length();
+          total += length;
+        } else if (child is Directory) {
+          total += await _getTotalSizeOfFilesInDir(child);
+        }
+      }
+    } catch (_) {}
+    return total;
+  }
+
+  Future<void> _clearCache() async {
+    final Directory libCacheDir = await _getCacheDir();
+    await libCacheDir.delete(recursive: true);
+    _getCacheSize();
+  }
+
+  void _showCacheDialog() {
+    KazumiDialog.show(
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('缓存管理'),
+          content: const Text('缓存为番剧封面, 清除后加载时需要重新下载,确认要清除缓存吗?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                KazumiDialog.dismiss();
+              },
+              child: Text(
+                '取消',
+                style: TextStyle(color: Theme.of(context).colorScheme.outline),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  _clearCache();
+                } catch (_) {}
+                KazumiDialog.dismiss();
+              },
+              child: const Text('确认'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -296,12 +393,23 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
               tiles: [
                 SettingsTileSegmentedButton<String>(
                   title: Text('启动界面', style: TextStyle(fontFamily: fontFamily)),
-                  segments: [
-                    for (final entry in defaultPageMap.entries)
-                      ButtonSegment<String>(
-                        value: entry.key,
-                        label: Text(entry.value),
-                      ),
+                  segments: const [
+                    ButtonSegment<String>(
+                      value: '/tab/popular/',
+                      label: Text('推荐'),
+                    ),
+                    ButtonSegment<String>(
+                      value: '/tab/timeline/',
+                      label: Text('时间表'),
+                    ),
+                    ButtonSegment<String>(
+                      value: '/tab/collect/',
+                      label: Text('收藏夹'),
+                    ),
+                    ButtonSegment<String>(
+                      value: '/tab/my/',
+                      label: Text('设置'),
+                    ),
                   ],
                   selected: {defaultPage},
                   onSelectionChanged: (Set<String> newSelection) {
@@ -309,6 +417,65 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                       updateDefaultPage(newSelection.first);
                     }
                   },
+                ),
+                SettingsTileSegmentedButton<String>(
+                  title:
+                      Text('收藏夹默认页面', style: TextStyle(fontFamily: fontFamily)),
+                  segments: const [
+                    ButtonSegment<String>(
+                      value: 'collect',
+                      label: Text('收藏夹'),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'history',
+                      label: Text('历史'),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'download',
+                      label: Text('下载'),
+                    ),
+                  ],
+                  selected: {defaultCollectView},
+                  onSelectionChanged: (Set<String> newSelection) {
+                    if (newSelection.isNotEmpty) {
+                      updateDefaultCollectView(newSelection.first);
+                    }
+                  },
+                ),
+                SettingsTile.switchTile(
+                  onToggle: (value) async {
+                    hideBuiltInCollectFolders =
+                        value ?? !hideBuiltInCollectFolders;
+                    await setting.put(
+                      SettingBoxKey.collectHideBuiltInFolders,
+                      hideBuiltInCollectFolders,
+                    );
+                    setState(() {});
+                  },
+                  title:
+                      Text('隐藏内建收藏夹', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text(
+                    '隐藏原本追番类型，但数据不会丢失',
+                    style: TextStyle(fontFamily: fontFamily),
+                  ),
+                  initialValue: hideBuiltInCollectFolders,
+                ),
+                SettingsTile.switchTile(
+                  onToggle: (value) async {
+                    foldableOptimization = value ?? !foldableOptimization;
+                    await setting.put(
+                      SettingBoxKey.foldableOptimization,
+                      foldableOptimization,
+                    );
+                    setState(() {});
+                  },
+                  title:
+                      Text('折叠屏优化', style: TextStyle(fontFamily: fontFamily)),
+                  description: Text(
+                    '开启后双栏始终 1:1，主导航固定底栏',
+                    style: TextStyle(fontFamily: fontFamily),
+                  ),
+                  initialValue: foldableOptimization,
                 ),
                 SettingsTile.switchTile(
                   onToggle: (value) async {
@@ -321,16 +488,33 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                       style: TextStyle(fontFamily: fontFamily)),
                   initialValue: showRating,
                 ),
+                SettingsTile.switchTile(
+                  onToggle: (value) async {
+                    autoUpdate = value ?? !autoUpdate;
+                    await setting.put(SettingBoxKey.autoUpdate, autoUpdate);
+                    setState(() {});
+                  },
+                  title:
+                      Text('自动检查更新', style: TextStyle(fontFamily: fontFamily)),
+                  initialValue: autoUpdate,
+                ),
                 if (Utils.isDesktop())
                   SettingsTileSegmentedButton<int>(
                     title:
-                        Text('关闭窗口时', style: TextStyle(fontFamily: fontFamily)),
-                    segments: [
-                      for (int i = 0; i < exitBehaviorTitles.length; i++)
-                        ButtonSegment<int>(
-                          value: i,
-                          label: Text(exitBehaviorTitles[i]),
-                        ),
+                        Text('关闭时', style: TextStyle(fontFamily: fontFamily)),
+                    segments: const [
+                      ButtonSegment<int>(
+                        value: 0,
+                        label: Text('退出'),
+                      ),
+                      ButtonSegment<int>(
+                        value: 1,
+                        label: Text('进托盘'),
+                      ),
+                      ButtonSegment<int>(
+                        value: 2,
+                        label: Text('询问'),
+                      ),
                     ],
                     selected: {exitBehavior},
                     onSelectionChanged: (Set<int> newSelection) {
@@ -342,6 +526,27 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                     },
                     showSelectedIcon: false,
                   ),
+              ],
+            ),
+            SettingsSection(
+              title: Text('其他', style: TextStyle(fontFamily: fontFamily)),
+              tiles: [
+                SettingsTile.navigation(
+                  onPressed: (_) {
+                    pushSettingsRoute('/settings/logs');
+                  },
+                  title: Text('错误日志', style: TextStyle(fontFamily: fontFamily)),
+                ),
+                SettingsTile.navigation(
+                  onPressed: (_) {
+                    _showCacheDialog();
+                  },
+                  title: Text('清除缓存', style: TextStyle(fontFamily: fontFamily)),
+                  value: _cacheSizeMB == -1
+                      ? Text('统计中...', style: TextStyle(fontFamily: fontFamily))
+                      : Text('${_cacheSizeMB.toStringAsFixed(2)}MB',
+                          style: TextStyle(fontFamily: fontFamily)),
+                ),
               ],
             ),
           ],

@@ -16,23 +16,31 @@ class CollectedBangumiAdapter extends TypeAdapter<CollectedBangumi> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    final legacyType = (fields[2] as num?)?.toInt() ?? 0;
+    final dynamic rawTypes = fields[3];
+    final List<int>? types = rawTypes is List
+        ? rawTypes.map((e) => (e as num).toInt()).toList()
+        : null;
     return CollectedBangumi(
       fields[0] as BangumiItem,
       fields[1] as DateTime,
-      (fields[2] as num).toInt(),
+      legacyType,
+      types,
     );
   }
 
   @override
   void write(BinaryWriter writer, CollectedBangumi obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.bangumiItem)
       ..writeByte(1)
       ..write(obj.time)
       ..writeByte(2)
-      ..write(obj.type);
+      ..write(obj.type)
+      ..writeByte(3)
+      ..write(obj.types);
   }
 
   @override

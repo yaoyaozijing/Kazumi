@@ -35,6 +35,28 @@ class Utils {
   static bool get isDocumentStartScriptSupported =>
       _isDocumentStartScriptSupported ?? false;
 
+  static int getGridCrossCount({
+    required double availableWidth,
+    required bool useDetailedGrid,
+    required bool useListGrid,
+    double gridColumnStep = 200,
+    double? compactWidth,
+  }) {
+    final double compact = compactWidth ?? LayoutBreakpoint.compact['width']!;
+    if (useListGrid) {
+      const double listColumnStep = 500;
+      if (availableWidth <= compact) return 1;
+      return 1 + 1 + ((availableWidth - compact) / listColumnStep).floor();
+    }
+    if (useDetailedGrid) {
+      const double detailedColumnStep = 400;
+      if (availableWidth <= compact) return 1;
+      return 1 + 1 + ((availableWidth - compact) / detailedColumnStep).floor();
+    }
+    if (availableWidth <= compact) return 3;
+    return 3 + 1 + ((availableWidth - compact) / gridColumnStep).floor();
+  }
+
   static Future<bool> isLowResolution() async {
     if (Platform.isMacOS) {
       return false;

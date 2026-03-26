@@ -15,6 +15,8 @@ class NetworkImgLayer extends StatelessWidget {
     this.fadeInDuration,
     this.quality,
     this.origAspectRatio,
+    this.fixedMemCacheWidth,
+    this.fixedMemCacheHeight,
   });
 
   final String? src;
@@ -25,6 +27,8 @@ class NetworkImgLayer extends StatelessWidget {
   final Duration? fadeInDuration;
   final int? quality;
   final double? origAspectRatio;
+  final int? fixedMemCacheWidth;
+  final int? fixedMemCacheHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +55,12 @@ class NetworkImgLayer extends StatelessWidget {
       }
     }
 
-    setMemCacheSizes();
+    if (fixedMemCacheWidth != null || fixedMemCacheHeight != null) {
+      memCacheWidth = fixedMemCacheWidth;
+      memCacheHeight = fixedMemCacheHeight;
+    } else {
+      setMemCacheSizes();
+    }
 
     if (memCacheWidth == null && memCacheHeight == null) {
       memCacheWidth = width.toInt();

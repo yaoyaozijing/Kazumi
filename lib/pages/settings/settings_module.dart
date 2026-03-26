@@ -1,8 +1,9 @@
 import 'package:kazumi/pages/settings/danmaku/danmaku_module.dart';
-import 'package:kazumi/pages/about/about_module.dart';
+import 'package:flutter/material.dart';
 import 'package:kazumi/pages/plugin_editor/plugin_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/pages/history/history_module.dart';
+import 'package:kazumi/pages/logs/logs_page.dart';
+import 'package:kazumi/request/api.dart';
 import 'package:kazumi/pages/settings/theme_settings_page.dart';
 import 'package:kazumi/pages/settings/player_settings.dart';
 import 'package:kazumi/pages/settings/displaymode_settings.dart';
@@ -12,7 +13,6 @@ import 'package:kazumi/pages/settings/proxy/proxy_module.dart';
 import 'package:kazumi/pages/webdav_editor/webdav_module.dart';
 import 'package:kazumi/pages/settings/keyboard_settings.dart';
 import 'package:kazumi/pages/settings/download_settings.dart';
-import 'package:kazumi/pages/download/download_page_module.dart';
 
 class SettingsModule extends Module {
   @override
@@ -58,9 +58,18 @@ class SettingsModule extends Module {
       module: WebDavModule(),
       transition: TransitionType.defaultTransition,
     );
-    r.module(
-      "/about",
-      module: AboutModule(),
+    r.child(
+      "/logs",
+      child: (_) => const LogsPage(),
+      transition: TransitionType.defaultTransition,
+    );
+    r.child(
+      "/license",
+      child: (_) => const LicensePage(
+        applicationName: 'Kazumi',
+        applicationVersion: Api.version,
+        applicationLegalese: '开源许可证',
+      ),
       transition: TransitionType.defaultTransition,
     );
     r.module(
@@ -69,18 +78,8 @@ class SettingsModule extends Module {
       transition: TransitionType.defaultTransition,
     );
     r.module(
-      "/history",
-      module: HistoryModule(),
-      transition: TransitionType.defaultTransition,
-    );
-    r.module(
       "/danmaku",
       module: DanmakuModule(),
-      transition: TransitionType.defaultTransition,
-    );
-    r.module(
-      "/download",
-      module: DownloadModule(),
       transition: TransitionType.defaultTransition,
     );
     r.child(

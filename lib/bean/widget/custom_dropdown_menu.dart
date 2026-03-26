@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// A custom dropdown menu widget that provides smooth animations without flickering.
-/// 
+///
 /// This widget was created to solve the visual flickering issue in Flutter's built-in
 /// [PopupMenuButton] where menu items are rendered before the animation completes,
 /// causing an uncoordinated visual effect.
@@ -11,14 +11,18 @@ class CustomDropdownMenu extends StatelessWidget {
   final Animation<double> animation;
   final List<String> items;
   final String Function(String) itemBuilder;
+  final Widget Function(String)? itemWidgetBuilder;
   final double? maxHeight;
+
   /// Minimum width constraint for the menu. Defaults to 140.
   /// Note: If [maxWidth] is less than [minWidth], [minWidth] will be used as both min and max.
   final double? minWidth;
+
   /// Maximum width constraint for the menu. Defaults to 200.
   /// Note: If this value is less than [minWidth], it will be adjusted to equal [minWidth].
   final double? maxWidth;
   final double gap;
+  final Set<int> dividerAfterIndices;
 
   const CustomDropdownMenu({
     super.key,
@@ -27,10 +31,12 @@ class CustomDropdownMenu extends StatelessWidget {
     required this.animation,
     required this.items,
     required this.itemBuilder,
+    this.itemWidgetBuilder,
     this.maxHeight,
     this.minWidth,
     this.maxWidth,
     this.gap = 4,
+    this.dividerAfterIndices = const <int>{},
   });
 
   @override
@@ -41,8 +47,8 @@ class CustomDropdownMenu extends StatelessWidget {
     final computedMinWidth = minWidth ?? 140;
     final computedMaxWidth = maxWidth ?? 200;
     final normalizedMinWidth = computedMinWidth;
-    final normalizedMaxWidth = computedMaxWidth < computedMinWidth 
-        ? computedMinWidth 
+    final normalizedMaxWidth = computedMaxWidth < computedMinWidth
+        ? computedMinWidth
         : computedMaxWidth;
 
     return GestureDetector(
@@ -88,18 +94,35 @@ class CustomDropdownMenu extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final itemValue = items[index];
                       final displayText = itemBuilder(itemValue);
-                      return InkWell(
-                        onTap: () => Navigator.pop(context, itemValue),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                      final customItem = itemWidgetBuilder?.call(itemValue);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InkWell(
+                            onTap: () => Navigator.pop(context, itemValue),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: customItem ??
+                                    Text(
+                                      displayText,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                              ),
+                            ),
                           ),
-                          child: Text(
-                            displayText,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
+                          if (dividerAfterIndices.contains(index))
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: theme.colorScheme.outlineVariant,
+                            ),
+                        ],
                       );
                     },
                   ),

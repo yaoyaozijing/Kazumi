@@ -6,7 +6,6 @@ import 'package:kazumi/utils/search_parser.dart';
 import 'package:kazumi/modules/search/search_history_module.dart';
 import 'package:kazumi/repositories/collect_repository.dart';
 import 'package:kazumi/repositories/search_history_repository.dart';
-import 'package:kazumi/modules/collect/collect_type.dart';
 
 part 'search_controller.g.dart';
 
@@ -23,10 +22,10 @@ abstract class _SearchPageController with Store {
   bool isTimeOut = false;
 
   @observable
-  late bool notShowWatchedBangumis = _collectRepository.getSearchNotShowWatchedBangumis();
+  bool notShowWatchedBangumis = false;
 
   @observable
-  late bool notShowAbandonedBangumis = _collectRepository.getSearchNotShowAbandonedBangumis();
+  bool notShowAbandonedBangumis = false;
 
   @observable
   ObservableList<BangumiItem> bangumiList = ObservableList.of([]);
@@ -111,20 +110,18 @@ abstract class _SearchPageController with Store {
   @action
   Future<void> setNotShowWatchedBangumis(bool value) async {
     notShowWatchedBangumis = value;
-    await _collectRepository.updateSearchNotShowWatchedBangumis(value);
   }
 
   @action
   Future<void> setNotShowAbandonedBangumis(bool value) async {
     notShowAbandonedBangumis = value;
-    await _collectRepository.updateSearchNotShowAbandonedBangumis(value);
   }
 
   Set<int> loadWatchedBangumiIds() {
-    return _collectRepository.getBangumiIdsByType(CollectType.watched);
+    return <int>{};
   }
 
   Set<int> loadAbandonedBangumiIds() {
-    return _collectRepository.getBangumiIdsByType(CollectType.abandoned);
+    return <int>{};
   }
 }

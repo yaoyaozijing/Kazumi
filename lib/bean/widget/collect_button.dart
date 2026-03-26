@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
+import 'package:kazumi/bean/widget/collect_folder_selection_content.dart';
 import 'package:kazumi/pages/collect/collect_controller.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/utils/storage.dart';
 
 class CollectButton extends StatefulWidget {
   CollectButton({
@@ -35,12 +37,7 @@ class CollectButton extends StatefulWidget {
 }
 
 class _CollectButtonState extends State<CollectButton> {
-  // 1. 在看
-  // 2. 想看
-  // 3. 搁置
-  // 4. 看过
-  // 5. 抛弃
-  late int collectType;
+  late List<int> collectTypes;
   final CollectController collectController = Modular.get<CollectController>();
 
   @override
@@ -48,114 +45,112 @@ class _CollectButtonState extends State<CollectButton> {
     super.initState();
   }
 
-  String getTypeStringByInt(int collectType) {
-    switch (collectType) {
-      case 1:
-        return "在看";
-      case 2:
-        return "想看";
-      case 3:
-        return "搁置";
-      case 4:
-        return "看过";
-      case 5:
-        return "抛弃";
-      default:
-        return "未追";
-    }
-  }
-
-  IconData getIconByInt(int collectType) {
-    switch (collectType) {
-      case 1:
-        return Icons.favorite;
-      case 2:
-        return Icons.star_rounded;
-      case 3:
-        return Icons.pending_actions;
-      case 4:
-        return Icons.done;
-      case 5:
-        return Icons.heart_broken;
-      default:
-        return Icons.favorite_border;
-    }
+  Future<void> openCollectBottomSheet() async {
+    widget.onOpen?.call();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (context) {
+        final hideBuiltInFolders = GStorage.setting.get(
+              SettingBoxKey.collectHideBuiltInFolders,
+              defaultValue: false,
+            ) ==
+            true;
+        final folders = hideBuiltInFolders
+            ? collectController
+                .getCollectFolders()
+                .where((folder) => !folder.isBuiltIn)
+                .toList()
+            : collectController.getCollectFolders();
+        final groups = collectController.getCollectGroups();
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final selectedTypes =
+                collectController.getCollectTypes(widget.bangumiItem);
+            return CollectFolderSelectionContent(
+              folders: folders,
+              groups: groups,
+              topActions: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.select_all, size: 16),
+                    label: const Text('全部收藏夹'),
+                    onPressed: () async {
+                      for (final folder in folders) {
+                        if (!selectedTypes.contains(folder.id)) {
+                          await collectController.toggleCollectType(
+                              widget.bangumiItem, folder.id);
+                        }
+                      }
+                      if (!mounted) return;
+                      setState(() {});
+                      setSheetState(() {});
+                    },
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.remove_circle_outline, size: 16),
+                    label: const Text('移除全部收藏夹'),
+                    onPressed: () async {
+                      if (selectedTypes.isNotEmpty) {
+                        await collectController.deleteCollect(widget.bangumiItem);
+                      }
+                      if (!mounted) return;
+                      setState(() {});
+                      setSheetState(() {});
+                    },
+                  ),
+                ],
+              ),
+              folderChipBuilder: (context, folder) {
+                final active = selectedTypes.contains(folder.id);
+                return ActionChip(
+                  avatar: Icon(
+                    active ? Icons.check_circle : Icons.add_circle_outline,
+                    size: 16,
+                    color: active ? Theme.of(context).colorScheme.primary : null,
+                  ),
+                  label: Text(folder.name),
+                  onPressed: () async {
+                    await collectController.toggleCollectType(
+                        widget.bangumiItem, folder.id);
+                    if (!mounted) return;
+                    setState(() {});
+                    setSheetState(() {});
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+    widget.onClose?.call();
   }
 
   @override
   Widget build(BuildContext context) {
-    collectType = collectController.getCollectType(widget.bangumiItem);
-    return MenuAnchor(
-      consumeOutsideTap: true,
-      onClose: widget.onClose,
-      onOpen: widget.onOpen,
-      crossAxisUnconstrained: false,
-      builder: (_, MenuController controller, __) {
-        if (widget.isExtended) {
-          return FilledButton.icon(
-            onPressed: () {
-              if (controller.isOpen) {
-                controller.close();
-              } else {
-                controller.open();
-              }
-            },
-            icon: Icon(getIconByInt(collectType)),
-            label: Text(getTypeStringByInt(collectType)),
-          );
-        } else {
-          return IconButton(
-            onPressed: () {
-              if (controller.isOpen) {
-                controller.close();
-              } else {
-                controller.open();
-              }
-            },
-            icon: Icon(
-              getIconByInt(collectType),
-              color: widget.color,
-            ),
-          );
-        }
-      },
-      menuChildren: List<MenuItemButton>.generate(
-        6,
-        (int index) => MenuItemButton(
-          onPressed: () {
-            if (index != collectType && mounted) {
-              collectController.addCollect(widget.bangumiItem, type: index);
-              setState(() {});
-            }
-          },
-          child: Container(
-            height: 48,
-            constraints: BoxConstraints(minWidth: 112),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    getIconByInt(index),
-                    color: index == collectType
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    ' ${getTypeStringByInt(index)}',
-                    style: TextStyle(
-                      color: index == collectType
-                          ? Theme.of(context).colorScheme.primary
-                          : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    collectTypes = collectController.getCollectTypes(widget.bangumiItem);
+    if (widget.isExtended) {
+      return FilledButton.icon(
+        onPressed: openCollectBottomSheet,
+        icon: const Icon(Icons.favorite),
+        label: Text(
+          collectTypes.length > 1
+              ? '${collectTypes.length}个收藏夹'
+              : collectController.getCollectFolderName(
+                  collectTypes.isEmpty ? 0 : collectTypes.first),
         ),
+      );
+    }
+    return IconButton(
+      onPressed: openCollectBottomSheet,
+      icon: Icon(
+        Icons.favorite,
+        color: widget.color,
       ),
     );
   }

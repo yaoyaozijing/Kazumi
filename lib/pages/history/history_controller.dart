@@ -47,6 +47,14 @@ abstract class _HistoryController with Store {
     init();
   }
 
+  Future<void> deleteHistories(List<History> historiesToDelete) async {
+    if (historiesToDelete.isEmpty) return;
+    for (final history in historiesToDelete) {
+      await _historyRepository.deleteHistory(history);
+    }
+    init();
+  }
+
   Future<void> clearProgress(BangumiItem bangumiItem, String adapterName, int episode) async {
     await _historyRepository.clearProgress(bangumiItem, adapterName, episode);
     init();

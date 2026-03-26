@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'package:kazumi/bean/appbar/drag_to_move_bar.dart';
 import 'package:kazumi/pages/router.dart';
+import 'package:kazumi/utils/constants.dart';
+import 'package:kazumi/utils/storage.dart';
 import 'package:provider/provider.dart';
 
 class ScaffoldMenu extends StatefulWidget {
@@ -29,11 +34,13 @@ class NavigationBarState extends ChangeNotifier {
   }
 
   void hideNavigate() {
+    if (_isHide) return;
     _isHide = true;
     notifyListeners();
   }
 
   void showNavigate() {
+    if (!_isHide) return;
     _isHide = false;
     notifyListeners();
   }
@@ -50,19 +57,53 @@ class _NavItem {
 class _ScaffoldMenu extends State<ScaffoldMenu> {
   final PageController _page = PageController();
   final GlobalKey _pageViewKey = GlobalKey();
-  
+  final NavigationBarState _navigationBarState = NavigationBarState();
+  final setting = GStorage.setting;
+  StreamSubscription<BoxEvent>? _collectDefaultViewSubscription;
+  StreamSubscription<BoxEvent>? _foldableOptimizationSubscription;
+  static const int _collectNavIndex = 2;
+
   // 通用导航内容
-  static const List<_NavItem> _navItems = <_NavItem>[
+  static const List<_NavItem> _baseNavItems = <_NavItem>[
     _NavItem(Icons.home_outlined, Icons.home, '推荐'),
     _NavItem(Icons.timeline_outlined, Icons.timeline, '时间表'),
-    _NavItem(Icons.favorite_border, Icons.favorite, '追番'),
-    _NavItem(Icons.settings_outlined, Icons.settings, '我的'),
+    _NavItem(Icons.favorite_outlined, Icons.favorite, '收藏夹'),
+    _NavItem(Icons.settings_outlined, Icons.settings, '设置'),
   ];
-  static List<NavigationDestination> get _bottomDestinations => _navItems
-      .map((e) => NavigationDestination(selectedIcon: Icon(e.selectedIcon), icon: Icon(e.icon), label: e.label))
+
+  _NavItem _collectNavItemByDefaultView() {
+    final dynamic rawMode =
+        setting.get(SettingBoxKey.collectDefaultView, defaultValue: 'collect');
+    final String mode = rawMode is String ? rawMode : 'collect';
+    switch (mode) {
+      case 'history':
+        return const _NavItem(Icons.history, Icons.history, '历史');
+      case 'download':
+        return const _NavItem(Icons.download_outlined, Icons.download, '下载');
+      case 'collect':
+      default:
+        return const _NavItem(Icons.favorite_outlined, Icons.favorite, '收藏夹');
+    }
+  }
+
+  List<_NavItem> get _navItems {
+    final items = _baseNavItems.toList();
+    items[_collectNavIndex] = _collectNavItemByDefaultView();
+    return items;
+  }
+
+  List<NavigationDestination> get _bottomDestinations => _navItems
+      .map((e) => NavigationDestination(
+          selectedIcon: Icon(e.selectedIcon),
+          icon: Icon(e.icon),
+          label: e.label))
       .toList();
-  static List<NavigationRailDestination> get _sideDestinations => _navItems
-      .map((e) => NavigationRailDestination(selectedIcon: Icon(e.selectedIcon), icon: Icon(e.icon), label: Text(e.label)))
+
+  List<NavigationRailDestination> get _sideDestinations => _navItems
+      .map((e) => NavigationRailDestination(
+          selectedIcon: Icon(e.selectedIcon),
+          icon: Icon(e.icon),
+          label: Text(e.label)))
       .toList();
 
   Widget _buildPageView() {
@@ -76,38 +117,110 @@ class _ScaffoldMenu extends State<ScaffoldMenu> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    Modular.to.addListener(_syncSelectedIndexWithRoute);
+    _collectDefaultViewSubscription =
+        setting.watch(key: SettingBoxKey.collectDefaultView).listen((_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+    _foldableOptimizationSubscription =
+        setting.watch(key: SettingBoxKey.foldableOptimization).listen((_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncSelectedIndexWithRoute();
+    });
+  }
+
+  @override
+  void dispose() {
+    Modular.to.removeListener(_syncSelectedIndexWithRoute);
+    _collectDefaultViewSubscription?.cancel();
+    _foldableOptimizationSubscription?.cancel();
+    _page.dispose();
+    _navigationBarState.dispose();
+    super.dispose();
+  }
+
+  int _resolveSelectedIndex(String path) {
+    for (int i = 0; i < menu.size; i++) {
+      final menuPath = "/tab${menu.getPath(i)}";
+      if (path == menuPath || path.startsWith("$menuPath/")) {
+        return i;
+      }
+    }
+    return 0;
+  }
+
+  void _syncSelectedIndexWithRoute() {
+    if (!mounted) {
+      return;
+    }
+    final currentPath = Modular.to.path;
+    final resolvedIndex = _resolveSelectedIndex(currentPath);
+    if (resolvedIndex != _navigationBarState.selectedIndex) {
+      _navigationBarState.updateSelectedIndex(resolvedIndex);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-        create: (context) => NavigationBarState(),
+    return ChangeNotifierProvider<NavigationBarState>.value(
+        value: _navigationBarState,
         child: Consumer<NavigationBarState>(builder: (context, state, _) {
-          return OrientationBuilder(builder: (context, orientation) {
-            state._isBottom = orientation == Orientation.portrait;
-            return orientation != Orientation.portrait
-                ? sideMenuWidget(context, state)
-                : bottomMenuWidget(context, state);
+          return LayoutBuilder(builder: (context, constraints) {
+            final forceBottom = setting.get(
+                  SettingBoxKey.foldableOptimization,
+                  defaultValue: false,
+                ) ==
+                true;
+            final bool useSideByLegacyRule =
+                MediaQuery.of(context).orientation == Orientation.landscape;
+            final bool useSideByWidthRule =
+                constraints.maxWidth >= LayoutBreakpoint.medium['width']!;
+            final bool useSide = useSideByLegacyRule || useSideByWidthRule;
+            state._isBottom = forceBottom || !useSide;
+            final bool showBottomNavigation = state._isBottom && !state.isHide;
+            return state._isBottom
+                ? bottomMenuWidget(
+                    context,
+                    state,
+                    showBottomNavigation: showBottomNavigation,
+                  )
+                : sideMenuWidget(context, state);
           });
         }));
   }
 
-  Widget bottomMenuWidget(BuildContext context, NavigationBarState state) {
+  Widget bottomMenuWidget(
+    BuildContext context,
+    NavigationBarState state, {
+    required bool showBottomNavigation,
+  }) {
     return Scaffold(
         body: Container(
           color: Theme.of(context).colorScheme.primaryContainer,
           child: _buildPageView(),
         ),
-        bottomNavigationBar: state.isHide
-            ? const SizedBox(height: 0)
-            : NavigationBar(
+        bottomNavigationBar: showBottomNavigation
+            ? NavigationBar(
                 destinations: _bottomDestinations,
                 selectedIndex: state.selectedIndex,
                 onDestinationSelected: (int index) {
                   state.updateSelectedIndex(index);
                   Modular.to.navigate("/tab${menu.getPath(index)}/");
                 },
-              ));
+              )
+            : const SizedBox(height: 0));
   }
 
-  Widget sideMenuWidget(BuildContext context, NavigationBarState state) {
+  Widget sideMenuWidget(
+    BuildContext context,
+    NavigationBarState state,
+  ) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
       body: Row(
@@ -117,13 +230,14 @@ class _ScaffoldMenu extends State<ScaffoldMenu> {
               visible: !state.isHide,
               child: DragToMoveArea(
                 child: NavigationRail(
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainer,
                   groupAlignment: 1.0,
                   leading: FloatingActionButton(
                     elevation: 0,
                     heroTag: null,
                     onPressed: () {
-                      Modular.to.pushNamed('/search/');
+                      Modular.to.pushNamed('/tab/search/');
                     },
                     child: const Icon(Icons.search),
                   ),

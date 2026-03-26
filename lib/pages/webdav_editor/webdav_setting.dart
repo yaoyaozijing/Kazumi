@@ -17,7 +17,6 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
   Box setting = GStorage.setting;
   late bool webDavEnable;
   late bool webDavEnableHistory;
-  late bool enableGitProxy;
   bool webDavConfigExpanded = false;
   bool passwordVisible = false;
   final TextEditingController webDavURLController = TextEditingController();
@@ -32,8 +31,6 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
     webDavEnable = setting.get(SettingBoxKey.webDavEnable, defaultValue: false);
     webDavEnableHistory =
         setting.get(SettingBoxKey.webDavEnableHistory, defaultValue: false);
-    enableGitProxy =
-        setting.get(SettingBoxKey.enableGitProxy, defaultValue: false);
     webDavURLController.text =
         setting.get(SettingBoxKey.webDavURL, defaultValue: '');
     webDavUsernameController.text =
@@ -172,24 +169,6 @@ class _PlayerSettingsPageState extends State<WebDavSettingsPage> {
         body: SettingsList(
           maxWidth: 1000,
           sections: [
-            SettingsSection(
-              title: Text('Github', style: TextStyle(fontFamily: fontFamily)),
-              tiles: [
-                SettingsTile.switchTile(
-                  onToggle: (value) async {
-                    enableGitProxy = value ?? !enableGitProxy;
-                    await setting.put(
-                        SettingBoxKey.enableGitProxy, enableGitProxy);
-                    setState(() {});
-                  },
-                  title: Text('Github镜像',
-                      style: TextStyle(fontFamily: fontFamily)),
-                  description: Text('使用镜像访问规则托管仓库',
-                      style: TextStyle(fontFamily: fontFamily)),
-                  initialValue: enableGitProxy,
-                ),
-              ],
-            ),
             SettingsSection(
               title: Text('WEBDAV', style: TextStyle(fontFamily: fontFamily)),
               tiles: [

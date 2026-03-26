@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
+import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/utils.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 
@@ -29,17 +30,16 @@ class BangumiTimelineCard extends StatelessWidget {
     final isTablet = Utils.isTablet();
     final theme = Theme.of(context);
     final textScaler = MediaQuery.textScalerOf(context);
-    final double imageWidth = cardHeight * 0.7;
-    final double borderRadius = 18;
+    final double imageWidth = cardHeight * StyleString.bangumiCoverAspectRatio;
+    final double borderRadius = 12;
 
     return Card(
       elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(borderRadius),
       ),
       clipBehavior: Clip.antiAlias,
-      color: theme.colorScheme.surface,
       child: InkWell(
         borderRadius: BorderRadius.circular(borderRadius),
         onTap: onTap ??
@@ -52,7 +52,8 @@ class BangumiTimelineCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              buildImage(context, bangumiItem.images['large'] ?? '', imageWidth, cardHeight),
+              buildImage(context, bangumiItem.images['large'] ?? '', imageWidth,
+                  cardHeight),
               Expanded(
                 child: Padding(
                   padding:
@@ -67,8 +68,9 @@ class BangumiTimelineCard extends StatelessWidget {
     );
   }
 
-  Widget buildImage(BuildContext context, String imageUrl, double width, double height) {
-    final borderRadius = BorderRadius.circular(16);
+  Widget buildImage(
+      BuildContext context, String imageUrl, double width, double height) {
+    final borderRadius = BorderRadius.circular(12);
     Widget img = NetworkImgLayer(
       src: imageUrl,
       width: width,
@@ -122,7 +124,8 @@ class BangumiTimelineCard extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 2),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withAlpha((255 * 0.10).round()),
+                color: colorScheme.primaryContainer
+                    .withAlpha((255 * 0.10).round()),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Padding(
@@ -166,16 +169,14 @@ class BangumiTimelineCard extends StatelessWidget {
                     Icon(Icons.leaderboard,
                         size: 15, color: colorScheme.tertiary),
                     const SizedBox(width: 2),
-                    Text(
-                        showRating ? 'Rank ${bangumiItem.rank}' : 'Rank ***',
+                    Text(showRating ? 'Rank ${bangumiItem.rank}' : 'Rank ***',
                         style: infoStyle),
                   ],
                 ),
               ),
             const Spacer(),
             if (showRating ? bangumiItem.votes > 0 : true)
-              Text(
-                  showRating ? '评分人数: ${bangumiItem.votes}' : '评分人数: ***',
+              Text(showRating ? '评分人数: ${bangumiItem.votes}' : '评分人数: ***',
                   style: subStyle),
           ],
         ),

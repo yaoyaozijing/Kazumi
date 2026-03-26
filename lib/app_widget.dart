@@ -12,6 +12,7 @@ import 'package:kazumi/utils/logger.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/theme_provider.dart';
+import 'package:kazumi/bean/widget/desktop_window_buttons_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:kazumi/utils/constants.dart';
 
@@ -281,6 +282,12 @@ class _AppWidgetState extends State<AppWidget>
           theme: themeProvider.light,
           darkTheme: themeProvider.dark,
           themeMode: themeProvider.themeMode,
+          builder: (context, child) {
+            if (child == null) {
+              return const SizedBox.shrink();
+            }
+            return DesktopWindowButtonsOverlay(child: child);
+          },
           routerConfig: Modular.routerConfig,
         );
       },

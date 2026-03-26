@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kazumi/bean/widget/collect_button.dart';
 import 'package:kazumi/utils/constants.dart';
+import 'package:kazumi/utils/extension.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -26,6 +27,41 @@ class BangumiInfoCardV extends StatefulWidget {
 
 class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
   int touchedIndex = -1;
+  int? _fixedMemCacheWidth;
+  int? _fixedMemCacheHeight;
+
+  @override
+  void didUpdateWidget(covariant BangumiInfoCardV oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bangumiItem.id != widget.bangumiItem.id ||
+        oldWidget.bangumiItem.images['large'] !=
+            widget.bangumiItem.images['large']) {
+      _fixedMemCacheWidth = null;
+      _fixedMemCacheHeight = null;
+    }
+  }
+
+  void _initFixedMemCacheSize(
+    BuildContext context,
+    double width,
+    double height,
+  ) {
+    if (_fixedMemCacheWidth != null || _fixedMemCacheHeight != null) {
+      return;
+    }
+    final aspectRatio = (width / height).toDouble();
+    if (aspectRatio > 1) {
+      _fixedMemCacheHeight = height.cacheSize(context);
+    } else if (aspectRatio < 1) {
+      _fixedMemCacheWidth = width.cacheSize(context);
+    } else {
+      _fixedMemCacheWidth = width.cacheSize(context);
+      _fixedMemCacheHeight = height.cacheSize(context);
+    }
+    if (_fixedMemCacheWidth == null && _fixedMemCacheHeight == null) {
+      _fixedMemCacheWidth = width.toInt();
+    }
+  }
 
   Widget get voteBarChart {
     return Flexible(
@@ -139,10 +175,11 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
               children: [
                 Flexible(
                   child: AspectRatio(
-                    aspectRatio: 0.65,
+                    aspectRatio: StyleString.bangumiCoverAspectRatio,
                     child: LayoutBuilder(builder: (context, boxConstraints) {
                       final double maxWidth = boxConstraints.maxWidth;
                       final double maxHeight = boxConstraints.maxHeight;
+                      _initFixedMemCacheSize(context, maxWidth, maxHeight);
                       return Hero(
                         transitionOnUserGestures: true,
                         tag: widget.bangumiItem.id,
@@ -150,6 +187,8 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                           src: widget.bangumiItem.images['large'] ?? '',
                           width: maxWidth,
                           height: maxHeight,
+                          fixedMemCacheWidth: _fixedMemCacheWidth,
+                          fixedMemCacheHeight: _fixedMemCacheHeight,
                           fadeInDuration: const Duration(milliseconds: 0),
                           fadeOutDuration: const Duration(milliseconds: 0),
                         ),
@@ -245,7 +284,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                           ],
                         ),
                         SizedBox(
-                          width: 120,
+                          width: 168,
                           height: 40,
                           child: CollectButton.extend(
                             bangumiItem: widget.bangumiItem,

@@ -16,7 +16,6 @@ import 'package:kazumi/bean/settings/theme_provider.dart';
 import 'package:kazumi/shaders/shaders_controller.dart';
 import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/utils/background_download_service.dart';
-import 'package:kazumi/utils/settings_route.dart';
 
 class InitPage extends StatefulWidget {
   const InitPage({super.key});
@@ -69,8 +68,8 @@ class _InitPageState extends State<InitPage> {
     backgroundService.onNavigateToDownloadRequested = () {
       Future.delayed(const Duration(milliseconds: 300), () {
         try {
-          if (Modular.to.path.contains('/download')) return;
-          pushSettingsRoute('/settings/download/');
+          if (Modular.to.path.contains('/tab/collect/')) return;
+          Modular.to.navigate('/tab/collect/');
         } catch (e) {
           KazumiLogger()
               .w('InitPage: failed to navigate to download page', error: e);

@@ -19,6 +19,7 @@ class ProxySettingsPage extends StatefulWidget {
 class _ProxySettingsPageState extends State<ProxySettingsPage> {
   Box setting = GStorage.setting;
   late bool proxyEnable;
+  late bool enableGitProxy;
   bool proxyConfigExpanded = false;
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController urlController = TextEditingController();
@@ -28,6 +29,8 @@ class _ProxySettingsPageState extends State<ProxySettingsPage> {
   void initState() {
     super.initState();
     proxyEnable = setting.get(SettingBoxKey.proxyEnable, defaultValue: false);
+    enableGitProxy =
+        setting.get(SettingBoxKey.enableGitProxy, defaultValue: false);
     urlController.text = setting.get(SettingBoxKey.proxyUrl, defaultValue: '');
     testUrlController.text = setting.get(SettingBoxKey.proxyTestUrl,
         defaultValue: 'https://www.google.com');
@@ -126,10 +129,28 @@ class _ProxySettingsPageState extends State<ProxySettingsPage> {
         onBackPressed(context);
       },
       child: Scaffold(
-        appBar: const SysAppBar(title: Text('代理设置')),
+        appBar: const SysAppBar(title: Text('网络设置')),
         body: SettingsList(
           maxWidth: 800,
           sections: [
+            SettingsSection(
+              title: Text('镜像', style: TextStyle(fontFamily: fontFamily)),
+              tiles: [
+                SettingsTile.switchTile(
+                  onToggle: (value) async {
+                    enableGitProxy = value ?? !enableGitProxy;
+                    await setting.put(
+                        SettingBoxKey.enableGitProxy, enableGitProxy);
+                    setState(() {});
+                  },
+                  title: Text('GitHub镜像',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  description: Text('使用镜像访问规则托管仓库',
+                      style: TextStyle(fontFamily: fontFamily)),
+                  initialValue: enableGitProxy,
+                ),
+              ],
+            ),
             SettingsSection(
               title: Text('代理', style: TextStyle(fontFamily: fontFamily)),
               tiles: [

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'package:kazumi/utils/storage.dart';
 import 'package:kazumi/utils/utils.dart';
+import 'package:kazumi/utils/constants.dart';
 import 'package:window_manager/window_manager.dart';
 
 class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -30,6 +31,7 @@ class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
   final PreferredSizeWidget? bottom;
 
   final bool needTopOffset;
+  final bool showDesktopCloseButton;
 
   const SysAppBar(
       {super.key,
@@ -42,11 +44,24 @@ class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
       this.leading,
       this.leadingWidth,
       this.bottom,
-      this.needTopOffset = true});
+      this.needTopOffset = true,
+      this.showDesktopCloseButton = true});
 
   bool showWindowButton() {
     return GStorage.setting
         .get(SettingBoxKey.showWindowButton, defaultValue: false);
+  }
+
+  double _desktopRightInset() {
+    if (!Utils.isDesktop()) {
+      return 0;
+    }
+    // Follow the legacy close-button visibility rule:
+    // when the desktop close button is hidden (usually left pane), no extra right inset.
+    if (!showWindowButton() && showDesktopCloseButton) {
+      return 168;
+    }
+    return 8;
   }
 
   @override
@@ -56,11 +71,7 @@ class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
       acs.addAll(actions!);
     }
     if (Utils.isDesktop()) {
-      // acs.add(IconButton(onPressed: () => windowManager.minimize(), icon: const Icon(Icons.minimize)));
-      if (!showWindowButton()) {
-        acs.add(CloseButton(onPressed: () => windowManager.close()));
-      }
-      acs.add(const SizedBox(width: 8));
+      acs.add(SizedBox(width: _desktopRightInset()));
     }
     return GestureDetector(
       onPanStart: (_) =>
@@ -134,7 +145,8 @@ class SysAppBar extends StatelessWidget implements PreferredSizeWidget {
     final path = Modular.to.path;
     final isMySettings = path.startsWith(mySettingsPrefix);
     final isMySettingsCompact =
-        MediaQuery.sizeOf(context).width < 700 && isMySettings;
+        MediaQuery.sizeOf(context).width < LayoutBreakpoint.medium['width']! &&
+            isMySettings;
     final shouldShowBackButton =
         canPopNavigator || canPopModular || isMySettingsCompact;
 

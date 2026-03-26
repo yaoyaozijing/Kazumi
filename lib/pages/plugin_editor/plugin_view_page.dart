@@ -23,7 +23,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
   // 是否处于多选模式
   bool isMultiSelectMode = false;
 
-  // 已选中的规则名称集合
+  // 已选中的规则名称收藏夹
   final Set<String> selectedNames = {};
 
   Future<void> _handleUpdate() async {

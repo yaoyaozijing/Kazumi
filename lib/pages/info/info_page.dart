@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:ui';
-import 'package:kazumi/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/widget/collect_button.dart';
@@ -16,9 +15,9 @@ import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/utils/logger.dart';
 import 'package:kazumi/pages/info/info_tabview.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
+import 'package:kazumi/utils/extension.dart';
 import 'package:kazumi/bean/appbar/drag_to_move_bar.dart' as dtb;
 
 class InfoPage extends StatefulWidget {
@@ -45,8 +44,69 @@ class _InfoPageState extends State<InfoPage> with TickerProviderStateMixin {
   bool charactersQueryTimeout = false;
   bool staffIsLoading = false;
   bool staffQueryTimeout = false;
+  int? _fixedBgMemCacheWidth;
+  int? _fixedBgMemCacheHeight;
+  String _fixedBgImageKey = '';
 
-  final inputBangumiIten = Modular.args.data as BangumiItem;
+  void _syncBgCacheKey(String imageUrl) {
+    if (_fixedBgImageKey == imageUrl) return;
+    _fixedBgImageKey = imageUrl;
+    _fixedBgMemCacheWidth = null;
+    _fixedBgMemCacheHeight = null;
+  }
+
+  void _initFixedBgMemCacheSize(
+    BuildContext context,
+    double width,
+    double height,
+  ) {
+    if (_fixedBgMemCacheWidth != null || _fixedBgMemCacheHeight != null) {
+      return;
+    }
+    final aspectRatio = (width / height).toDouble();
+    if (aspectRatio > 1) {
+      _fixedBgMemCacheHeight = height.cacheSize(context);
+    } else if (aspectRatio < 1) {
+      _fixedBgMemCacheWidth = width.cacheSize(context);
+    } else {
+      _fixedBgMemCacheWidth = width.cacheSize(context);
+      _fixedBgMemCacheHeight = height.cacheSize(context);
+    }
+    if (_fixedBgMemCacheWidth == null && _fixedBgMemCacheHeight == null) {
+      _fixedBgMemCacheWidth = width.toInt();
+    }
+  }
+
+  BangumiItem _resolveBangumiArg() {
+    final data = Modular.args.data;
+    if (data is BangumiItem) {
+      return data;
+    }
+    final id = int.tryParse(Modular.args.queryParams['bangumiId'] ?? '') ?? 0;
+    return BangumiItem(
+      id: id,
+      type: 2,
+      name: '',
+      nameCn: '',
+      summary: '',
+      airDate: '',
+      airWeekday: 0,
+      rank: 0,
+      images: const {
+        'large': '',
+        'common': '',
+        'medium': '',
+        'small': '',
+        'grid': '',
+      },
+      tags: const [],
+      alias: const [],
+      ratingScore: 0,
+      votes: 0,
+      votesCount: const [],
+      info: '',
+    );
+  }
 
   Future<void> loadCharacters() async {
     if (charactersIsLoading) return;
@@ -120,7 +180,7 @@ class _InfoPageState extends State<InfoPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    infoController.bangumiItem = inputBangumiIten;
+    infoController.bangumiItem = _resolveBangumiArg();
     infoController.characterList.clear();
     infoController.commentsList.clear();
     infoController.staffList.clear();
@@ -136,7 +196,8 @@ class _InfoPageState extends State<InfoPage> with TickerProviderStateMixin {
     sourceTabController =
         TabController(length: pluginsController.pluginList.length, vsync: this);
     infoTabController = TabController(length: 5, vsync: this);
-    showRating = GStorage.setting.get(SettingBoxKey.showRating, defaultValue: true);
+    showRating =
+        GStorage.setting.get(SettingBoxKey.showRating, defaultValue: true);
     infoTabController.addListener(() {
       int index = infoTabController.index;
       if (index == 1 &&
@@ -172,7 +233,35 @@ class _InfoPageState extends State<InfoPage> with TickerProviderStateMixin {
       await infoController.queryBangumiInfoByID(id, type: type);
       setState(() {});
     } catch (e) {
-      KazumiLogger().e('InfoController: failed to query bangumi info by ID', error: e);
+      KazumiLogger()
+          .e('InfoController: failed to query bangumi info by ID', error: e);
+    }
+  }
+
+  void _handleBackPressed(BuildContext context) {
+    final isCompact =
+        MediaQuery.sizeOf(context).width < LayoutBreakpoint.medium['width']!;
+    final path = Modular.to.path;
+    if (isCompact) {
+      if (path.startsWith('/tab/timeline/info')) {
+        Modular.to.navigate('/tab/timeline/');
+        return;
+      }
+      if (path.startsWith('/tab/popular/info')) {
+        Modular.to.navigate('/tab/popular/');
+        return;
+      }
+      if (path.startsWith('/tab/collect/info')) {
+        Modular.to.navigate('/tab/collect/');
+        return;
+      }
+    }
+    if (Navigator.canPop(context)) {
+      Navigator.maybePop(context);
+      return;
+    }
+    if (Modular.to.canPop()) {
+      Modular.to.pop();
     }
   }
 
@@ -181,8 +270,22 @@ class _InfoPageState extends State<InfoPage> with TickerProviderStateMixin {
     final List<String> tabs = <String>['概览', '吐槽', '角色', '评论', '制作人员'];
     final bool showWindowButton = GStorage.setting
         .get(SettingBoxKey.showWindowButton, defaultValue: false);
+    final double actionsRightSpacing =
+        (Platform.isWindows || Platform.isLinux || Platform.isMacOS) &&
+                !showWindowButton
+            ? 168
+            : 8;
+    final bool isEmbeddedTabInfo = (Modular.to.path
+                .startsWith('/tab/timeline/info') ||
+            Modular.to.path.startsWith('/tab/popular/info') ||
+            Modular.to.path.startsWith('/tab/collect/info')) &&
+        MediaQuery.sizeOf(context).width >= LayoutBreakpoint.medium['width']!;
     return PopScope(
-      canPop: true,
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) return;
+        _handleBackPressed(context);
+      },
       child: DefaultTabController(
         length: tabs.length,
         child: Scaffold(
@@ -209,14 +312,17 @@ class _InfoPageState extends State<InfoPage> with TickerProviderStateMixin {
                     ),
                     automaticallyImplyLeading: false,
                     scrolledUnderElevation: 0.0,
-                    leading: EmbeddedNativeControlArea(
-                      child: IconButton(
-                        onPressed: () {
-                          Navigator.maybePop(context);
-                        },
-                        icon: Icon(Icons.arrow_back),
-                      ),
-                    ),
+                    leading: isEmbeddedTabInfo
+                        ? const SizedBox.shrink()
+                        : EmbeddedNativeControlArea(
+                            child: IconButton(
+                              onPressed: () {
+                                _handleBackPressed(context);
+                              },
+                              icon: Icon(Icons.arrow_back),
+                            ),
+                          ),
+                    leadingWidth: isEmbeddedTabInfo ? 0 : null,
                     actions: [
                       if (innerBoxIsScrolled)
                         EmbeddedNativeControlArea(
@@ -238,9 +344,7 @@ class _InfoPageState extends State<InfoPage> with TickerProviderStateMixin {
                           icon: const Icon(Icons.open_in_browser_rounded),
                         ),
                       ),
-                      if (!showWindowButton && Utils.isDesktop())
-                        CloseButton(onPressed: () => windowManager.close()),
-                      SizedBox(width: 8),
+                      SizedBox(width: actionsRightSpacing),
                     ],
                     toolbarHeight: (Platform.isMacOS && showWindowButton)
                         ? kToolbarHeight + 22
@@ -287,16 +391,36 @@ class _InfoPageState extends State<InfoPage> with TickerProviderStateMixin {
                                                 stops: [0.8, 1],
                                               ).createShader(bounds);
                                             },
-                                            child: NetworkImgLayer(
-                                              src: infoController.bangumiItem
-                                                      .images['large'] ??
-                                                  '',
-                                              width: boxConstraints.maxWidth,
-                                              height: boxConstraints.maxHeight,
-                                              fadeInDuration: const Duration(
-                                                  milliseconds: 0),
-                                              fadeOutDuration: const Duration(
-                                                  milliseconds: 0),
+                                            child: Builder(
+                                              builder: (context) {
+                                                final bgSrc = infoController
+                                                        .bangumiItem
+                                                        .images['large'] ??
+                                                    '';
+                                                _syncBgCacheKey(bgSrc);
+                                                _initFixedBgMemCacheSize(
+                                                  context,
+                                                  boxConstraints.maxWidth,
+                                                  boxConstraints.maxHeight,
+                                                );
+                                                return NetworkImgLayer(
+                                                  src: bgSrc,
+                                                  width:
+                                                      boxConstraints.maxWidth,
+                                                  height:
+                                                      boxConstraints.maxHeight,
+                                                  fixedMemCacheWidth:
+                                                      _fixedBgMemCacheWidth,
+                                                  fixedMemCacheHeight:
+                                                      _fixedBgMemCacheHeight,
+                                                  fadeInDuration:
+                                                      const Duration(
+                                                          milliseconds: 0),
+                                                  fadeOutDuration:
+                                                      const Duration(
+                                                          milliseconds: 0),
+                                                );
+                                              },
                                             ),
                                           ),
                                         );
@@ -376,7 +500,9 @@ class _InfoPageState extends State<InfoPage> with TickerProviderStateMixin {
                 showDragHandle: true,
                 context: context,
                 builder: (context) {
-                  return SourceSheet(tabController: sourceTabController, infoController: infoController);
+                  return SourceSheet(
+                      tabController: sourceTabController,
+                      infoController: infoController);
                 },
               );
             },

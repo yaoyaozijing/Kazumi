@@ -30,6 +30,7 @@ import 'package:kazumi/pages/player/player_item_surface.dart';
 import 'package:mobx/mobx.dart' as mobx;
 import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:saver_gallery/saver_gallery.dart';
+import 'package:kazumi/bean/widget/desktop_window_buttons_overlay.dart';
 
 class PlayerItem extends StatefulWidget {
   const PlayerItem({
@@ -401,7 +402,7 @@ class _PlayerItemState extends State<PlayerItem>
     playerTimer?.cancel();
     playerController.pause(enableSync: false);
     hideTimer?.cancel();
-    playerController.showVideoController = true;
+    _setVideoControllerVisible(true);
   }
 
   void handleProgressBarDragEnd() {
@@ -551,17 +552,22 @@ class _PlayerItemState extends State<PlayerItem>
     videoPageController.isFullscreen = !videoPageController.isFullscreen;
   }
 
+  void _setVideoControllerVisible(bool visible) {
+    playerController.showVideoController = visible;
+    DesktopWindowButtonsOverlay.setPlayerPanelVisible(visible);
+  }
+
   void displayVideoController() {
     animationController?.forward();
     hideTimer?.cancel();
     startHideTimer();
-    playerController.showVideoController = true;
+    _setVideoControllerVisible(true);
   }
 
   void hideVideoController() {
     animationController?.reverse();
     hideTimer?.cancel();
-    playerController.showVideoController = false;
+    _setVideoControllerVisible(false);
   }
 
   Future<void> setPlaybackSpeed(double speed) async {
@@ -635,7 +641,7 @@ class _PlayerItemState extends State<PlayerItem>
   void startHideTimer() {
     hideTimer = Timer(const Duration(seconds: 4), () {
       if (mounted && playerController.canHidePlayerPanel) {
-        playerController.showVideoController = false;
+        _setVideoControllerVisible(false);
         animationController?.reverse();
       }
       hideTimer = null;
@@ -1295,6 +1301,7 @@ class _PlayerItemState extends State<PlayerItem>
   @override
   void initState() {
     super.initState();
+    DesktopWindowButtonsOverlay.setInPlayer(true);
     _loadShortcuts();
     _initKeyboardActions();
     _initPlayerMenu();
@@ -1377,6 +1384,8 @@ class _PlayerItemState extends State<PlayerItem>
     playerController.brightnessSeeking = false;
     playerController.volumeSeeking = false;
     playerController.canHidePlayerPanel = true;
+    DesktopWindowButtonsOverlay.setPlayerPanelVisible(true);
+    DesktopWindowButtonsOverlay.setInPlayer(false);
     super.dispose();
   }
 
@@ -1405,7 +1414,7 @@ class _PlayerItemState extends State<PlayerItem>
                   } else {
                     if (!playerController.showVideoController) {
                       animationController?.forward();
-                      playerController.showVideoController = true;
+                      _setVideoControllerVisible(true);
                     }
                   }
                 }

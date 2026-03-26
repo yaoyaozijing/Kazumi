@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/bean/card/bangumi_card.dart';
+import 'package:kazumi/bean/widget/batch_collect_sheet.dart';
+import 'package:kazumi/bean/widget/collect_filter_panel.dart';
+import 'package:kazumi/bean/widget/sort_filter_tab_panel.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kazumi/bean/widget/error_widget.dart';
+import 'package:kazumi/pages/collect/collect_controller.dart';
 import 'package:kazumi/pages/search/search_controller.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/utils/logger.dart';
+import 'package:kazumi/utils/search_parser.dart';
+import 'package:kazumi/utils/storage.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key, this.inputTag = ''});
@@ -18,23 +25,34 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+  final CollectController collectController = Modular.get<CollectController>();
   final SearchController searchController = SearchController();
+  bool get hideBuiltInCollectFolders =>
+      GStorage.setting.get(
+        SettingBoxKey.collectHideBuiltInFolders,
+        defaultValue: false,
+      ) ==
+      true;
+  List<CollectFolder> get visibleCollectFolders => hideBuiltInCollectFolders
+      ? collectController
+          .getCollectFolders()
+          .where((folder) => !folder.isBuiltIn)
+          .toList()
+      : collectController.getCollectFolders();
 
   /// Don't use modular singleton here. We may have multiple search pages.
   /// Use a new instance of SearchPageController for each search page.
   final SearchPageController searchPageController = SearchPageController();
   final ScrollController scrollController = ScrollController();
 
-  final List<Tab> tabs = [
-    Tab(text: "排序方式"),
-    Tab(text: "过滤器"),
-  ];
+  Set<int> selectedFilterIds = <int>{};
 
   @override
   void initState() {
     super.initState();
     scrollController.addListener(scrollListener);
     searchPageController.loadSearchHistories();
+    selectedFilterIds = getAllFilterIds();
   }
 
   @override
@@ -55,109 +73,80 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  Widget showFilterSwitcher() {
-    return Wrap(
-      children: [
-        Observer(
-          builder: (context) => InkWell(
-            onTap: () {
-              searchPageController.setNotShowWatchedBangumis(
-                  !searchPageController.notShowWatchedBangumis);
-            },
-            child: ListTile(
-              title: const Text('不显示已看过的番剧'),
-              trailing: Switch(
-                value: searchPageController.notShowWatchedBangumis,
-                onChanged: (value) {
-                  searchPageController.setNotShowWatchedBangumis(value);
-                },
+  Set<int> getAllFilterIds() =>
+      <int>{0, ...visibleCollectFolders.map((folder) => folder.id)};
+
+  Widget showSearchOptionPanel() {
+    return StatefulBuilder(builder: (context, setSheetState) {
+      final sort =
+          SearchParser(searchController.text).parseSort()?.toLowerCase() ??
+              'heat';
+      final selectedSort =
+          {'heat', 'rank', 'match'}.contains(sort) ? sort : 'heat';
+      final groups = collectController.getCollectGroups();
+      final folders = visibleCollectFolders;
+      return SortFilterTabPanel(
+        sortChild: SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<String>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment<String>(
+                value: 'heat',
+                label: Text('热度'),
+                icon: Icon(Icons.local_fire_department_outlined, size: 18),
               ),
-            ),
+              ButtonSegment<String>(
+                value: 'rank',
+                label: Text('评分'),
+                icon: Icon(Icons.star_outline, size: 18),
+              ),
+              ButtonSegment<String>(
+                value: 'match',
+                label: Text('匹配'),
+                icon: Icon(Icons.tune, size: 18),
+              ),
+            ],
+            selected: {selectedSort},
+            onSelectionChanged: (selected) {
+              final nextSort = selected.first;
+              searchController.text = searchPageController.attachSortParams(
+                searchController.text,
+                nextSort,
+              );
+              searchPageController.searchBangumi(
+                searchController.text,
+                type: 'init',
+              );
+              setSheetState(() {});
+            },
           ),
         ),
-        Observer(
-          builder: (context) => InkWell(
-            onTap: () {
-              searchPageController.setNotShowAbandonedBangumis(
-                  !searchPageController.notShowAbandonedBangumis);
-            },
-            child: ListTile(
-              title: const Text('不显示已抛弃的番剧'),
-              trailing: Switch(
-                value: searchPageController.notShowAbandonedBangumis,
-                onChanged: (value) {
-                  searchPageController.setNotShowAbandonedBangumis(value);
-                },
-              ),
-            ),
-          ),
+        filterChild: CollectFilterPanel(
+          groups: groups,
+          folders: folders,
+          selectedIds: selectedFilterIds,
+          onChanged: (next) {
+            setSheetState(() {
+              selectedFilterIds = Set<int>.from(next);
+            });
+            setState(() {});
+          },
         ),
-      ],
-    );
+      );
+    });
   }
 
-  Widget showSortSwitcher() {
-    return Wrap(
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('按热度排序'),
-              onTap: () {
-                Navigator.pop(context);
-                searchController.text = searchPageController.attachSortParams(
-                    searchController.text, 'heat');
-                searchPageController.searchBangumi(searchController.text,
-                    type: 'init');
-              },
-            ),
-            ListTile(
-              title: const Text('按评分排序'),
-              onTap: () {
-                Navigator.pop(context);
-                searchController.text = searchPageController.attachSortParams(
-                    searchController.text, 'rank');
-                searchPageController.searchBangumi(searchController.text,
-                    type: 'init');
-              },
-            ),
-            ListTile(
-              title: const Text('按匹配程度排序'),
-              onTap: () {
-                Navigator.pop(context);
-                searchController.text = searchPageController.attachSortParams(
-                    searchController.text, 'match');
-                searchPageController.searchBangumi(searchController.text,
-                    type: 'init');
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget showSearchOptionTabBar({required List<Widget> options}) {
-    return DefaultTabController(
-        length: tabs.length,
-        child: Scaffold(
-            body: Column(
-          children: [
-            PreferredSize(
-              preferredSize: Size.fromHeight(kToolbarHeight),
-              child: Material(
-                child: TabBar(
-                  tabs: tabs,
-                ),
-              ),
-            ),
-            Expanded(
-                child: TabBarView(
-              children: options,
-            ))
-          ],
-        )));
+  List<BangumiItem> getFilteredBangumiList() {
+    final selected = selectedFilterIds;
+    if (selected.isEmpty) return <BangumiItem>[];
+    return searchPageController.bangumiList.where((item) {
+      final types = collectController.getCollectTypes(item);
+      if (types.isEmpty) {
+        return selected.contains(0);
+      }
+      return types.any(selected.contains);
+    }).toList();
   }
 
   @override
@@ -178,22 +167,10 @@ class _SearchPageState extends State<SearchPage> {
         onPressed: () async {
           showModalBottomSheet(
             isScrollControlled: true,
-            constraints: BoxConstraints(
-              maxHeight: (MediaQuery.sizeOf(context).height >=
-                      LayoutBreakpoint.compact['height']!)
-                  ? MediaQuery.of(context).size.height * 1 / 4
-                  : MediaQuery.of(context).size.height,
-              maxWidth: (MediaQuery.sizeOf(context).width >=
-                      LayoutBreakpoint.medium['width']!)
-                  ? MediaQuery.of(context).size.width * 9 / 16
-                  : MediaQuery.of(context).size.width,
-            ),
-            clipBehavior: Clip.antiAlias,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             context: context,
             builder: (context) {
-              return showSearchOptionTabBar(
-                  options: [showSortSwitcher(), showFilterSwitcher()]);
+              return showSearchOptionPanel();
             },
           );
         },
@@ -204,71 +181,99 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
-            child: FocusScope(
-              descendantsAreFocusable: false,
-              child: SearchAnchor.bar(
-                searchController: searchController,
-                barElevation: WidgetStateProperty<double>.fromMap(
-                  <WidgetStatesConstraint, double>{WidgetState.any: 0},
-                ),
-                viewElevation: 0,
-                viewLeading: IconButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  icon: Icon(Icons.arrow_back),
-                ),
-                isFullScreen: MediaQuery.sizeOf(context).width <
-                    LayoutBreakpoint.compact['width']!,
-                suggestionsBuilder: (context, controller) => [
-                  Observer(
-                    builder: (context) {
-                      if (controller.text.isNotEmpty) {
-                        return Container(
-                          height: 400,
-                          alignment: Alignment.center,
-                          child: Text("无可用搜索建议，回车以直接检索"),
-                        );
-                      } else {
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (var history in searchPageController
-                                .searchHistories
-                                .take(10))
-                              ListTile(
-                                title: Text(history.keyword),
-                                onTap: () {
-                                  controller.text = history.keyword;
-                                  searchPageController.searchBangumi(
-                                      controller.text,
-                                      type: 'init');
-                                  if (searchController.isOpen) {
-                                    searchController.closeView(history.keyword);
-                                  }
-                                },
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.close),
-                                  onPressed: () {
-                                    searchPageController
-                                        .deleteSearchHistory(history);
-                                  },
-                                ),
-                              ),
-                          ],
-                        );
-                      }
-                    },
+            child: Observer(builder: (context) {
+              final filteredList = getFilteredBangumiList();
+              final canBatchSave = searchController.text.trim().isNotEmpty &&
+                  filteredList.isNotEmpty;
+              return Row(
+                children: [
+                  Expanded(
+                    child: FocusScope(
+                      descendantsAreFocusable: false,
+                      child: SearchAnchor.bar(
+                        searchController: searchController,
+                        barElevation: WidgetStateProperty<double>.fromMap(
+                          <WidgetStatesConstraint, double>{WidgetState.any: 0},
+                        ),
+                        viewElevation: 0,
+                        viewLeading: IconButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          icon: Icon(Icons.arrow_back),
+                        ),
+                        isFullScreen: MediaQuery.sizeOf(context).width <
+                            LayoutBreakpoint.compact['width']!,
+                        suggestionsBuilder: (context, controller) => [
+                          Observer(
+                            builder: (context) {
+                              if (controller.text.isNotEmpty) {
+                                return Container(
+                                  height: 400,
+                                  alignment: Alignment.center,
+                                  child: Text("无可用搜索建议，回车以直接检索"),
+                                );
+                              } else {
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    for (var history in searchPageController
+                                        .searchHistories
+                                        .take(10))
+                                      ListTile(
+                                        title: Text(history.keyword),
+                                        onTap: () {
+                                          controller.text = history.keyword;
+                                          searchPageController.searchBangumi(
+                                              controller.text,
+                                              type: 'init');
+                                          if (searchController.isOpen) {
+                                            searchController
+                                                .closeView(history.keyword);
+                                          }
+                                        },
+                                        trailing: IconButton(
+                                          icon: const Icon(Icons.close),
+                                          onPressed: () {
+                                            searchPageController
+                                                .deleteSearchHistory(history);
+                                          },
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                        onSubmitted: (value) {
+                          searchPageController.searchBangumi(value,
+                              type: 'init');
+                          if (searchController.isOpen) {
+                            searchController.closeView(value);
+                          }
+                        },
+                      ),
+                    ),
                   ),
+                  if (canBatchSave) ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: '保存当前搜索结果',
+                      onPressed: () async {
+                        await BatchCollectSheet.show(
+                          context: context,
+                          items: filteredList,
+                          keyword: searchController.text,
+                          defaultGroupId: 0,
+                        );
+                      },
+                      icon: const Icon(Icons.saved_search_rounded),
+                    ),
+                  ],
                 ],
-                onSubmitted: (value) {
-                  searchPageController.searchBangumi(value, type: 'init');
-                  if (searchController.isOpen) {
-                    searchController.closeView(value);
-                  }
-                },
-              ),
-            ),
+              );
+            }),
           ),
           Expanded(
             child: Observer(builder: (context) {
@@ -293,7 +298,6 @@ class _SearchPageState extends State<SearchPage> {
                 );
               }
 
-
               if (searchPageController.isLoading &&
                   searchPageController.bangumiList.isEmpty) {
                 return Center(child: CircularProgressIndicator());
@@ -307,21 +311,7 @@ class _SearchPageState extends State<SearchPage> {
                   LayoutBreakpoint.medium['width']!) {
                 crossCount = 6;
               }
-              List<BangumiItem> filteredList = searchPageController.bangumiList.toList();
-
-              if (searchPageController.notShowWatchedBangumis) {
-                final watchedBangumiIds = searchPageController.loadWatchedBangumiIds();
-                filteredList = filteredList
-                    .where((item) => !watchedBangumiIds.contains(item.id))
-                    .toList();
-              }
-
-              if (searchPageController.notShowAbandonedBangumis) {
-                final abandonedBangumiIds = searchPageController.loadAbandonedBangumiIds();
-                filteredList = filteredList
-                    .where((item) => !abandonedBangumiIds.contains(item.id))
-                    .toList();
-              }
+              final filteredList = getFilteredBangumiList();
 
               return GridView.builder(
                 controller: scrollController,
@@ -330,9 +320,10 @@ class _SearchPageState extends State<SearchPage> {
                   mainAxisSpacing: StyleString.cardSpace - 2,
                   crossAxisSpacing: StyleString.cardSpace,
                   crossAxisCount: crossCount,
-                  mainAxisExtent:
-                      MediaQuery.of(context).size.width / crossCount / 0.65 +
-                          MediaQuery.textScalerOf(context).scale(32.0),
+                  mainAxisExtent: MediaQuery.of(context).size.width /
+                          crossCount /
+                          StyleString.bangumiCoverAspectRatio +
+                      MediaQuery.textScalerOf(context).scale(32.0),
                 ),
                 itemCount: filteredList.isNotEmpty ? filteredList.length : 10,
                 itemBuilder: (context, index) {

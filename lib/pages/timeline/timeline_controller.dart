@@ -1,9 +1,6 @@
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/request/bangumi.dart';
 import 'package:kazumi/utils/anime_season.dart';
-import 'package:kazumi/repositories/collect_repository.dart';
-import 'package:kazumi/modules/collect/collect_type.dart';
 import 'package:mobx/mobx.dart';
 
 part 'timeline_controller.g.dart';
@@ -11,8 +8,6 @@ part 'timeline_controller.g.dart';
 class TimelineController = _TimelineController with _$TimelineController;
 
 abstract class _TimelineController with Store {
-  final _collectRepository = Modular.get<ICollectRepository>();
-
   @observable
   ObservableList<List<BangumiItem>> bangumiCalendar =
       ObservableList<List<BangumiItem>>();
@@ -27,10 +22,10 @@ abstract class _TimelineController with Store {
   bool isTimeOut = false;
 
   @observable
-  late bool notShowAbandonedBangumis = _collectRepository.getTimelineNotShowAbandonedBangumis();
+  bool notShowAbandonedBangumis = false;
 
   @observable
-  late bool notShowWatchedBangumis = _collectRepository.getTimelineNotShowWatchedBangumis();
+  bool notShowWatchedBangumis = false;
 
   int sortType = 1;
 
@@ -55,24 +50,50 @@ abstract class _TimelineController with Store {
   }
 
   Future<void> getSchedulesBySeason() async {
-    // 4次获取，每次最多20部
     isLoading = true;
     isTimeOut = false;
     bangumiCalendar.clear();
-    var time = 0;
-    const maxTime = 4;
-    const limit = 20;
-    var resBangumiCalendar = List.generate(7, (_) => <BangumiItem>[]);
-    for (time = 0; time < maxTime; time++) {
-      final offset = time * limit;
-      var newList = await BangumiHTTP.getCalendarBySearch(
-          AnimeSeason(selectedDate).toSeasonStartAndEnd(), limit, offset);
-      for (int i = 0; i < resBangumiCalendar.length; ++i) {
-        resBangumiCalendar[i].addAll(newList[i]);
-      }
-      bangumiCalendar.clear();
-      bangumiCalendar.addAll(resBangumiCalendar);
+    final resBangumiCalendar = await _fetchSeasonCalendar(selectedDate);
+    bangumiCalendar.clear();
+    bangumiCalendar.addAll(resBangumiCalendar);
+    isLoading = false;
+    if (bangumiCalendar.isEmpty) {
+      isTimeOut = true;
+    } else {
+      isTimeOut = bangumiCalendar.every((innerList) => innerList.isEmpty);
     }
+    if (!isTimeOut) {
+      changeSortType(sortType);
+    }
+  }
+
+  Future<void> getSchedulesBySeasons(List<DateTime> seasonDates) async {
+    isLoading = true;
+    isTimeOut = false;
+    bangumiCalendar.clear();
+    final normalized = <String, DateTime>{};
+    for (final date in seasonDates) {
+      final key = '${date.year}-${date.month}';
+      normalized[key] = date;
+    }
+    if (normalized.isEmpty) {
+      isLoading = false;
+      isTimeOut = true;
+      return;
+    }
+    final merged = List.generate(7, (_) => <BangumiItem>[]);
+    final seenByDay = List.generate(7, (_) => <int>{});
+    for (final seasonDate in normalized.values) {
+      final seasonCalendar = await _fetchSeasonCalendar(seasonDate);
+      for (int i = 0; i < 7; i++) {
+        for (final item in seasonCalendar[i]) {
+          if (seenByDay[i].add(item.id)) {
+            merged[i].add(item);
+          }
+        }
+      }
+    }
+    bangumiCalendar.addAll(merged);
     isLoading = false;
     if (bangumiCalendar.isEmpty) {
       isTimeOut = true;
@@ -87,6 +108,23 @@ abstract class _TimelineController with Store {
   void tryEnterSeason(DateTime date) {
     selectedDate = date;
     seasonString = "加载中 ٩(◦`꒳´◦)۶";
+  }
+
+  Future<List<List<BangumiItem>>> _fetchSeasonCalendar(DateTime date) async {
+    // 4次获取，每次最多20部
+    var time = 0;
+    const maxTime = 4;
+    const limit = 20;
+    final resBangumiCalendar = List.generate(7, (_) => <BangumiItem>[]);
+    for (time = 0; time < maxTime; time++) {
+      final offset = time * limit;
+      final newList = await BangumiHTTP.getCalendarBySearch(
+          AnimeSeason(date).toSeasonStartAndEnd(), limit, offset);
+      for (int i = 0; i < resBangumiCalendar.length; ++i) {
+        resBangumiCalendar[i].addAll(newList[i]);
+      }
+    }
+    return resBangumiCalendar;
   }
 
   /// 排序方式
@@ -120,20 +158,18 @@ abstract class _TimelineController with Store {
   @action
   Future<void> setNotShowAbandonedBangumis(bool value) async {
     notShowAbandonedBangumis = value;
-    await _collectRepository.updateTimelineNotShowAbandonedBangumis(value);
   }
 
   @action
   Future<void> setNotShowWatchedBangumis(bool value) async {
     notShowWatchedBangumis = value;
-    await _collectRepository.updateTimelineNotShowWatchedBangumis(value);
   }
 
   Set<int> loadAbandonedBangumiIds() {
-    return _collectRepository.getBangumiIdsByType(CollectType.abandoned);
+    return <int>{};
   }
 
   Set<int> loadWatchedBangumiIds() {
-    return _collectRepository.getBangumiIdsByType(CollectType.watched);
+    return <int>{};
   }
 }

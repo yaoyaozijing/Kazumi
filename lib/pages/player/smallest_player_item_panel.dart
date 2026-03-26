@@ -77,7 +77,7 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
       Modular.get<VideoPageController>();
   final PlayerController playerController = Modular.get<PlayerController>();
   final TextEditingController textController = TextEditingController();
-  
+
   // SVG Caches
   String? cachedSvgString;
   Widget? cachedDanmakuOnIcon;
@@ -85,6 +85,15 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
 
   static const double _danmakuIconSize = 24.0;
   static const double _loadingIndicatorStrokeWidth = 2.0;
+  static const double _desktopRightOverlayInset = 168.0;
+
+  bool get _needDesktopOverlayInset {
+    if (!Utils.isDesktop()) {
+      return false;
+    }
+    return setting.get(SettingBoxKey.showWindowButton, defaultValue: false) !=
+        true;
+  }
 
   void showForwardChange() {
     KazumiDialog.show(builder: (context) {
@@ -158,7 +167,7 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
     haEnable = setting.get(SettingBoxKey.hAenable, defaultValue: true);
     cacheSvgIcons();
   }
-  
+
   void cacheSvgIcons() {
     cachedDanmakuOffIcon = RepaintBoundary(
       child: SvgPicture.asset(
@@ -167,7 +176,7 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
       ),
     );
   }
-  
+
   Widget danmakuOnIcon(BuildContext context) {
     final colorHex = Theme.of(context)
         .colorScheme
@@ -211,9 +220,7 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
             },
       tooltip: playerController.danmakuLoading
           ? '弹幕加载中...'
-          : (playerController.danmakuOn
-              ? '关闭弹幕'
-              : '打开弹幕'),
+          : (playerController.danmakuOn ? '关闭弹幕' : '打开弹幕'),
     );
   }
 
@@ -570,7 +577,7 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                       color: Colors.white)),
             // 弹幕开关
             _buildDanmakuToggleButton(context),
-            // 追番
+            // 收藏夹
             CollectButton(
               bangumiItem: videoPageController.bangumiItem,
               onOpen: () {
@@ -683,28 +690,29 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                 ),
                 SubmenuButton(
                   menuChildren: superResolutionTypeMap.entries
-                    .map(
-                      (entry) => MenuItemButton(
-                        onPressed: () =>
-                            widget.handleSuperResolutionChange(entry.key),
-                        child: Container(
-                          height: 48,
-                          constraints: const BoxConstraints(minWidth: 112),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              entry.value,
-                              style: TextStyle(
-                                color: playerController.superResolutionType == entry.key
-                                    ? Theme.of(context).colorScheme.primary
-                                    : null,
+                      .map(
+                        (entry) => MenuItemButton(
+                          onPressed: () =>
+                              widget.handleSuperResolutionChange(entry.key),
+                          child: Container(
+                            height: 48,
+                            constraints: const BoxConstraints(minWidth: 112),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                entry.value,
+                                style: TextStyle(
+                                  color: playerController.superResolutionType ==
+                                          entry.key
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    )
-                    .toList(),
+                      )
+                      .toList(),
                   child: Container(
                     height: 48,
                     constraints: BoxConstraints(minWidth: 112),
@@ -813,8 +821,7 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                       context: context,
                       builder: (context) {
                         return DanmakuSettingsSheet(
-                          danmakuController:
-                              playerController.danmakuController,
+                          danmakuController: playerController.danmakuController,
                           onUpdateDanmakuSpeed:
                               playerController.updateDanmakuSpeed,
                         );
@@ -904,8 +911,11 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                     for (final int minutes in [15, 30, 60])
                       MenuItemButton(
                         onPressed: () {
-                          TimedShutdownService().start(minutes, onExpired: widget.pauseForTimedShutdown);
-                          KazumiDialog.showToast(message: '已设置 ${TimedShutdownService().formatMinutesToDisplay(minutes)} 后定时关闭');
+                          TimedShutdownService().start(minutes,
+                              onExpired: widget.pauseForTimedShutdown);
+                          KazumiDialog.showToast(
+                              message:
+                                  '已设置 ${TimedShutdownService().formatMinutesToDisplay(minutes)} 后定时关闭');
                         },
                         child: Container(
                           height: 48,
@@ -915,9 +925,10 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                             child: Text(
                               "$minutes 分钟",
                               style: TextStyle(
-                                color: TimedShutdownService().setMinutes == minutes
-                                    ? Theme.of(context).colorScheme.primary
-                                    : null,
+                                color:
+                                    TimedShutdownService().setMinutes == minutes
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
                               ),
                             ),
                           ),
@@ -945,7 +956,8 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: ValueListenableBuilder<int>(
-                        valueListenable: TimedShutdownService().remainingSecondsNotifier,
+                        valueListenable:
+                            TimedShutdownService().remainingSecondsNotifier,
                         builder: (context, remainingSeconds, child) {
                           return Text(
                             remainingSeconds > 0
@@ -958,6 +970,9 @@ class _SmallestPlayerItemPanelState extends State<SmallestPlayerItemPanel> {
                   ),
                 ),
               ],
+            ),
+            SizedBox(
+              width: _needDesktopOverlayInset ? _desktopRightOverlayInset : 0,
             ),
           ],
         ),
